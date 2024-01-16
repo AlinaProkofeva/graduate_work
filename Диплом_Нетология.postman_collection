@@ -1,0 +1,1595 @@
+{
+	"info": {
+		"_postman_id": "d9184f96-f104-428e-9903-98a8827d940c",
+		"name": "Диплом Нетология",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23796956"
+	},
+	"item": [
+		{
+			"name": "Сторона клиента",
+			"item": [
+				{
+					"name": "user - регистрация клиента",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"first_name\": \"клиент\",\r\n    \"last_name\": \"тест\",\r\n    \"email\": \"some_email@mail.ru\",\r\n    \"password\": \"test12345678\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/user/register/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"register",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "user - регистрация менеджера",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"first_name\": \"Имя\",\r\n    \"last_name\": \"Имяv\",\r\n    \"email\": \"some_email@mail.ru\",\r\n    \"password\": \"test1234567\",\r\n    \"company\": \"Связной\",\r\n    \"position\": \"ОМ\",\r\n    \"type\": \"shop\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/user/register/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"register",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "user - активация аккаунта после регистрации/смены email",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"ve4nayavesna@mail.ru\",\r\n    \"token\": \"a43ff4a030153f267fd250bd833c7cc94\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/user/register/confirm/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"register",
+								"confirm",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "user - регистрация через VK",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"grant_type\": \"convert_token\",\r\n    \"client_id\": \"AcdwH8nakehDsG9diKwGOtGWtCxpjHqdC8zRId7c\",\r\n    \"backend\": \"vk-oauth2\",\r\n    \"token\": \"vk1.a.A1KSl7MkJq0BdscadbgWCajFjASNw6aWSLJLZ5zlqXMSflJLQ35UedDvaD_s8TpUGe9KEkW2e9nZMgqPV6DfhwYuvuhOZcdfsUTGxSwCSYTSBDnQKKg6J8qqqAxcwqwk3qUSqAVpBkcwjZKmNYzrB6yzXFyavTH0US1Vo--CM-Pje7HiGeTaT2mvpjrQ6mNZ\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/user/register_vk/convert-token/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"register_vk",
+								"convert-token",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "user - log in",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"some_email@mail.ru\",\r\n    \"password\": \"test12345678\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/user/login/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"login",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "user - logout",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"ve4nayavesna@mail.ru\",\r\n    \"password\": \"a43ff4a030153f267fd250bd833c7cc94\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/user/login/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"login",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "user - reset password",
+					"request": {
+						"auth": {
+							"type": "bearer"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"some_email@mail.ru\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/user/password_reset/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"password_reset",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "user - reset password confirm",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"ve4nayavesna@mail.ru\",\r\n    \"password\": \"a43ff4a030153f267fd250bd833c7cc94\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/user/login/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"login",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "user - просмотреть аккаунт",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token 94eef55008fe06ff64d7fd6a59df5dce38c9f00e",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/user/details/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"details",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "user - редактировать аккаунт",
+					"request": {
+						"auth": {
+							"type": "bearer"
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token eec97287bd0dc37654bee8e6f1c8745bf43d55c7",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Token 9289f942619374574f477f1792cee727fdbcab49",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "first_name",
+									"value": "В",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "first_name_qqqq",
+									"value": "ццуйуйцу",
+									"description": "ошибка",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "password",
+									"value": "test12345678",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "email",
+									"value": "a@m.ru",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "last_name",
+									"value": "Весна",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "some@gmail.com",
+									"type": "text",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/user/details/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"details",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "клиент - получить контакт и адреса",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "admin",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8000/user/contact/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"contact",
+								""
+							],
+							"query": [
+								{
+									"key": "city",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "qwe",
+									"description": "по совпадению номера телефона",
+									"disabled": true
+								},
+								{
+									"key": "street",
+									"value": "зел",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "клиент - добавить контакт и адреса",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"auth": {
+							"type": "bearer"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token 94eef55008fe06ff64d7fd6a59df5dce38c9f00e",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"phone\": 3334455,\r\n    \"city\": \"Калининград\",\r\n    \"street\": \"Велосипедная\",\r\n    \"house\": \"10\",\r\n    \"structure\": \"\",\r\n    \"building\": \"Н\",\r\n    \"apartment\": \"17\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/user/contact/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"contact",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "клиент - изменить контакт и адреса",
+					"request": {
+						"auth": {
+							"type": "bearer"
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token 77386556f49c4e586740a228da7a0e03fac1992a",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Token 15ad37f00776745694099d74264f513932342c04",
+								"description": "user without contact",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"phone\": 8123334444,\r\n    \"id\": 31,\r\n    \"region\": \"Башкортостан респ.\",\r\n    \"district\": \"\",\r\n    \"settlement\": \"Уфа гор.\",\r\n    \"street\": \"Ленина ул.\",\r\n    \"house\": \"55\",\r\n    \"structure\": \"\",\r\n    \"building\": \"Н\",\r\n    \"apartment\": \"80\"\r\n        }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/user/contact/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"contact",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "клиент - удалить адреса или контакт",
+					"request": {
+						"auth": {
+							"type": "bearer"
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token 94eef55008fe06ff64d7fd6a59df5dce38c9f00e",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "ids",
+									"value": "qw",
+									"description": "\"Некорректное значение аргумента \\\"ids\\\"\"",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "ids",
+									"value": "1, 3",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "ids",
+									"value": "15",
+									"description": "нет такого ид",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "ids",
+									"value": "5, 7, 10",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/user/contact/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"contact",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "клиент - посмотреть корзину",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "admin",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8000/basket/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"basket",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "клиент - добавить товар в корзину",
+					"request": {
+						"auth": {
+							"type": "bearer"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token 94eef55008fe06ff64d7fd6a59df5dce38c9f00e",
+								"description": "есть товар из Билайн",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Token 119ae49262cba7dbe2cb5b639ae83e90a0c1f83f",
+								"description": "пустая",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n        \"ordered_items\": [\r\n            {\r\n                \"product_info\": 1,\r\n                \"quantity\": 2\r\n            }\r\n        ]\r\n    }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/basket/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"basket",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "клиент - изменить кол-во товара в корзине",
+					"request": {
+						"auth": {
+							"type": "bearer"
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token 119ae49262cba7dbe2cb5b639ae83e90a0c1f83f",
+								"description": "пустая корзина",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "Authorization",
+								"value": "Token 94eef55008fe06ff64d7fd6a59df5dce38c9f00e",
+								"description": "меняет",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/basket/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"basket",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "клиент - удалить товар из корзины",
+					"request": {
+						"auth": {
+							"type": "bearer"
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token 119ae49262cba7dbe2cb5b639ae83e90a0c1f83f",
+								"description": "нет корзины",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Token 94eef55008fe06ff64d7fd6a59df5dce38c9f00e",
+								"description": "удаляет",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "ids",
+									"value": "[2, 3]",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "",
+									"value": "",
+									"type": "text",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/basket/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"basket",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "клиент - получить мои заказы + поиск",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token 119ae49262cba7dbe2cb5b639ae83e90a0c1f83f",
+								"description": "нет заказов",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "Authorization",
+								"value": "Token e5d5cf9ac7f2b87cde00a2ab1ae88807e6f0b28d",
+								"description": "есть заказы",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/order/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"order",
+								""
+							],
+							"query": [
+								{
+									"key": "shop",
+									"value": "бил",
+									"disabled": true
+								},
+								{
+									"key": "date_before",
+									"value": "2023-10-18",
+									"disabled": true
+								},
+								{
+									"key": "date_after",
+									"value": "2023-10-15",
+									"disabled": true
+								},
+								{
+									"key": "product",
+									"value": "5s",
+									"disabled": true
+								},
+								{
+									"key": "state",
+									"value": "confirmed",
+									"disabled": true
+								},
+								{
+									"key": "id",
+									"value": "3",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "клиент - разместить заказ из корзины",
+					"request": {
+						"auth": {
+							"type": "bearer"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token e5d5cf9ac7f2b87cde00a2ab1ae88807e6f0b28d",
+								"description": "есть корзина",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "Authorization",
+								"value": "Token 4945667daf3d476c0812bf772fe38d11f4d30c2f",
+								"description": "пустая",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "Authorization",
+								"value": "Token 3c4f1f5d3499b525f6387b40271b6d6f99c8257d",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"contact\": 1,\r\n    \"delivery_date\": \"2024-01-25\",\r\n    \"delivery_time\": \"afternoon_15_18\",\r\n    \"recipient_full_name\": \"Муртазина Алина Е\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/order/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"order",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "клиент - детализация заказа по id",
+					"request": {
+						"auth": {
+							"type": "bearer"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token eec97287bd0dc37654bee8e6f1c8745bf43d55c7",
+								"description": "чужой токен",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "Authorization",
+								"value": "Token e5d5cf9ac7f2b87cde00a2ab1ae88807e6f0b28d",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://127.0.0.1:8000/order/9/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"order",
+								"9",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "клиент - отправить оценку и отзыв",
+					"request": {
+						"auth": {
+							"type": "bearer"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token e5d5cf9ac7f2b87cde00a2ab1ae88807e6f0b28d",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"product_id\": 40,\r\n    \"rating\": 4,\r\n    \"review\": \"тут некие впечатления от использования\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8000/products/rate/",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"products",
+								"rate",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "партнер - посмотреть статус магазина",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token 4945667daf3d476c0812bf772fe38d11f4d30c2f",
+						"description": "ошибка, покупатель",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Token 94eef55008fe06ff64d7fd6a59df5dce38c9f00e",
+						"description": "менеджер без привязки к магазину",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Token 119ae49262cba7dbe2cb5b639ae83e90a0c1f83f",
+						"description": "менеджер с магазином",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/partner/state/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"partner",
+						"state",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "партнер - изменить статус магазина",
+			"request": {
+				"auth": {
+					"type": "bearer"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token 77386556f49c4e586740a228da7a0e03fac1992a",
+						"description": "\"Error\": \"Функционал доступен менеджеру магазина\"",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Token 94eef55008fe06ff64d7fd6a59df5dce38c9f00e",
+						"description": " \"Error\": \"У пользователя нет закрепленного магазина\"",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Token eec97287bd0dc37654bee8e6f1c8745bf43d55c7",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"state\": \"True\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/partner/state/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"partner",
+						"state",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "партнер - получить заказы магазина + поиск/фильтрация",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token 77386556f49c4e586740a228da7a0e03fac1992a",
+						"description": "\"Error\": \"Функционал доступен менеджеру магазина\"",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Token eec97287bd0dc37654bee8e6f1c8745bf43d55c7",
+						"description": "пусто, нет магазина у менеджера",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Token 119ae49262cba7dbe2cb5b639ae83e90a0c1f83f",
+						"description": "ok",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/partner/orders/?delivery_before=2023-12-30",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"partner",
+						"orders",
+						""
+					],
+					"query": [
+						{
+							"key": "sum_more",
+							"value": "64000",
+							"disabled": true
+						},
+						{
+							"key": "state",
+							"value": "new",
+							"disabled": true
+						},
+						{
+							"key": "state",
+							"value": "confirmed",
+							"disabled": true
+						},
+						{
+							"key": "product",
+							"value": "каб",
+							"disabled": true
+						},
+						{
+							"key": "sum_less",
+							"value": "61000",
+							"disabled": true
+						},
+						{
+							"key": "date_after",
+							"value": "2023-12-25",
+							"disabled": true
+						},
+						{
+							"key": "date_before",
+							"value": "2023-12-25",
+							"disabled": true
+						},
+						{
+							"key": "date",
+							"value": "2023-12-25",
+							"disabled": true
+						},
+						{
+							"key": "id",
+							"value": "3",
+							"disabled": true
+						},
+						{
+							"key": "delivery_before",
+							"value": "2023-12-30"
+						},
+						{
+							"key": "delivery_after",
+							"value": "2023-12-30",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "партнер - изменить статус заказа",
+			"request": {
+				"auth": {
+					"type": "bearer"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token e5d5cf9ac7f2b87cde00a2ab1ae88807e6f0b28d",
+						"description": "\"Error\": \"Функционал доступен менеджеру магазина\"",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Token 94eef55008fe06ff64d7fd6a59df5dce38c9f00e",
+						"description": "Error, менеджер не привязан к магазину",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Token eec97287bd0dc37654bee8e6f1c8745bf43d55c7",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"id\": 8,\r\n    \"state\": \"assembled\",\r\n    \"delivery_date\": \"2024-01-12\",\r\n    \"delivery_time\": \"afternoon_12\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/partner/orders/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"partner",
+						"orders",
+						""
+					],
+					"query": [
+						{
+							"key": "state",
+							"value": "new",
+							"disabled": true
+						},
+						{
+							"key": "state",
+							"value": "assembled",
+							"disabled": true
+						},
+						{
+							"key": "state",
+							"value": "wwww",
+							"description": "'Error': 'Указано некорректное значение параметра'",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "партнер - обновить остатки полностью",
+			"request": {
+				"auth": {
+					"type": "bearer"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token 4945667daf3d476c0812bf772fe38d11f4d30c2f",
+						"description": "покупатель, error",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "url",
+							"value": "qwerty",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "url",
+							"value": "http://bee.ru",
+							"type": "text"
+						},
+						{
+							"key": "",
+							"type": "file",
+							"src": "/D:/Netology/4_django/p1 — копия/shop_post.yaml",
+							"disabled": true
+						}
+					]
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/partner/update/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"partner",
+						"update",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "партнер -  принять накладную, переоценку, описание товара",
+			"request": {
+				"auth": {
+					"type": "bearer"
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token e5d5cf9ac7f2b87cde00a2ab1ae88807e6f0b28d",
+						"description": "покупатель",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Token 15ad37f00776745694099d74264f513932342c04",
+						"description": "нов менеджер без магазина",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Token eec97287bd0dc37654bee8e6f1c8745bf43d55c7",
+						"description": "менеджер  магазина",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Token vnffhr4iujgo4u9ugo9g",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/D:/Netology/Graduate_work_celery/shop_patch.yaml"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/partner/update/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"partner",
+						"update",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Магазины - список",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/shops/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"shops",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Категории - список",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/categories/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"categories",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Товары на складах + поиск и фильтры",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/products/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"products",
+						""
+					],
+					"query": [
+						{
+							"key": "search",
+							"value": "apple",
+							"disabled": true
+						},
+						{
+							"key": "search",
+							"value": "длина",
+							"disabled": true
+						},
+						{
+							"key": "price_less",
+							"value": "5000",
+							"description": "товары дешевле value",
+							"disabled": true
+						},
+						{
+							"key": "price_more",
+							"value": "5000",
+							"disabled": true
+						},
+						{
+							"key": "category",
+							"value": "периф",
+							"disabled": true
+						},
+						{
+							"key": "shop_name",
+							"value": "бил",
+							"disabled": true
+						},
+						{
+							"key": "shop_name",
+							"value": "Бил",
+							"disabled": true
+						},
+						{
+							"key": "ordering",
+							"value": "-price",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Детализация товара в магазине по id",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/products/51/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"products",
+						"51",
+						""
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

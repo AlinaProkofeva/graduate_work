@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+{% block head %}
+<h2>Ваш заказ №{{ order.id }} от {{ order_created }} {{ ru_state }}</h2>
+{% endblock head %}
+
+<div style="color:#606261; font:arial">
+<h3> Состав заказа </h3>
+<ul>
+    {% for i in order.ordered_items.all %}
+        {% block orderitems %}
+        <li> {{i}} - {{i.quantity}} шт </li>
+        {% endblock orderitems %}
+    {% endfor %}
+    </ul>
+<p><b>Сумма заказа: {{ total_sum }} ₽</b></p>
+<hr align="left" width="600">
+<h3>Адрес доставки</h3> {{ address }}
+    <p><b>Дата и время доставки: {{ delivery_date }} {{ delivery_time }}</b></p>
+    <p><b>Получатель: {{ order.recipient_full_name }}, {{phone}}</b></p>
+
+    {% block warning %}
+    {% endblock warning %}
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{% extends 'backend/message_new_state.html' %}
+
+{% block head %}
+<h1>Вы создали новый заказ №{{order.id}} в магазине {{shop}}  </h1>
+{% endblock head %}
+
+{% block warning %}
+<hr align="left" width="600">
+<p style="color:#a43333f7" ><b>Обращаем Ваше внимание, что дата и время доставки заказа могут быть изменены. В случае
+    изменений Компания свяжется с Вами по указанному контактному номеру телефона</b></p>
+{% endblock warning %}

@@ -1,0 +1,61 @@
+version: "3.9"
+
+volumes:
+  pgdata:
+  static_volume:
+
+services:
+  backend:
+    build: .
+    container_name: backend_app_2
+    volumes:
+      - static_volume:/code/static/
+    command: sh -c "./manage.py collectstatic --noinput && ./manage.py migrate && ./manage.py initadmin && gunicorn --bind 0.0.0.0:8000 shop_site.wsgi:application"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgredb
+      - redis
+
+  postgredb:
+    image: postgres
+    container_name: postgredb_2
+    restart: unless-stopped
+    volumes:
+      - .:/docker-entrypoint-initdb.d
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+
+  nginx:
+    build:
+      dockerfile: Dockerfile
+      context: ./docker/nginx/
+    container_name: nginx_2
+    volumes:
+      - static_volume:/code/static/
+    ports:
+      - "${NGINX_EXTERNAL_PORT}:80"
+    depends_on:
+      - backend
+
+  redis:
+    image: redis
+    container_name: redis_2
+    ports:
+      - "6379:6379"
+
+  celery:
+    build:
+      context: .
+    container_name: celery_2
+    environment:
+      BACKEND: ${BACKEND}
+      BROKER: ${BROKER}
+    entrypoint: celery -A shop_site worker
+    depends_on:
+      - redis
+      - backend

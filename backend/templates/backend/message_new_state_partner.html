@@ -1,0 +1,17 @@
+{% extends 'backend/message_new_state.html' %}
+
+{% block head %}
+<h1>Создан новый заказ №{{ order.id }} от {{ order_created }}</h1>
+{% endblock head %}
+
+{% block orderitems %}
+        <li><b>арт. {{i.product_info.external_id}}</b>, {{i}} - {{i.quantity}} шт </li>
+{% endblock orderitems %}
+
+{% block warning %}
+<hr align="left" width="600">
+<div style="color:#a43333f7">
+    <p><b>Клиент: {{ customer }}</b></p>
+
+</div>
+{% endblock warning %}
