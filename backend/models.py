@@ -119,6 +119,7 @@ class User(AbstractUser):
                             max_length=5,
                             default='buyer')
     # contacts - контакты пользователя
+    # shop - связанный магазин
     # confirm_email_token - токен активации пользователя
     # ratings - оценки и отзывы пользователя
 

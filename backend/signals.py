@@ -1,10 +1,13 @@
+import datetime
 from datetime import timedelta
+
+from django.core.mail import EmailMultiAlternatives
 from django.dispatch import receiver, Signal
 from django.template.loader import get_template
 from django_rest_passwordreset.models import ResetPasswordToken
 from django_rest_passwordreset.signals import reset_password_token_created
 
-from backend.models import ConfirmEmailToken, Order, ORDER_STATE_CHOICES, DELIVERY_TIME_CHOICES
+from backend.models import ConfirmEmailToken, Order, ORDER_STATE_CHOICES, DELIVERY_TIME_CHOICES, User
 from shop_site import settings
 from .tasks import task_send_email
 
@@ -12,6 +15,7 @@ from .tasks import task_send_email
 new_account_registered = Signal('user_id')
 new_order_state = Signal('order_id')
 new_order_created = Signal('order_id')
+backup_shop = Signal('user_id')
 
 
 # noinspection PyUnusedLocal
@@ -146,3 +150,34 @@ def reset_password_token_signal(sender, instance, reset_password_token: ResetPas
     to = [reset_password_token.user.email]
 
     task_send_email.delay(subject, from_email, to, body)
+
+
+# noinspection PyUnusedLocal
+@receiver(backup_shop)
+def backup_shop_signal(user_id: int, **kwargs) -> None:
+    """
+    Отправка письма менеджеру магазина с резервной копией остатков склада
+
+    :param user_id: id менеджера магазина
+    """
+
+    user = User.objects.get(id=user_id)
+    filename = f'{user.shop.name}.yaml'
+
+    subject = f'Остатки товаров на складе {user.shop.name}'
+    body = f'Остатки товаров на складе {user.shop.name} на {datetime.datetime.now()}'
+    from_email = settings.EMAIL_HOST_USER
+    to = [user.email]
+
+    # task_send_email.delay(subject, from_email, to, body, filename=filename)  # не видит файл FileNotFoundError(2, 'No
+    # such file or directory')  No such file or directory: 'Связной.yaml' (??????)
+
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        from_email=from_email,
+        to=to,
+        body=body
+    )
+    content = open(filename, 'rb')
+    msg.attach(filename, content.read(), 'text/yaml')
+    msg.send()

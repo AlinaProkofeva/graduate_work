@@ -32,11 +32,12 @@ from shop_site.yasg import OrderPostSerializer, BasketDeleteSerializer, BasketPo
     PartnerStatePostSerializer, PartnerUpdatePostSerializer, manual_parameters_partnerupdate, \
     ContactPatchSerializer, ContactDeleteSerializer, ContactPostSerializer, \
     AccountCreatePatchSerializer, ConfirmAccountSerializer, LoginAccountSerializer, RateProductSerializer
-from .signals import new_account_registered, new_order_state, new_order_created
+from .signals import new_account_registered, new_order_state, new_order_created, backup_shop
 from .utils.error_text import Error, ValidateError
 from .utils import reg_patterns
 from .utils.get_data_from_yaml import get_data_from_yaml_file, create_categories, get_data_from_all_tasks
 from .tasks import task_load_good_from_yaml
+from .task_backup import backup_shop_base
 
 
 '''==================Сторона клиента========================='''
@@ -1488,3 +1489,37 @@ class PartnerUpdate(APIView):
 
         status = True if counter else False
         return Response({'Status': status, 'Загружено/обновлено товаров': counter, **errors})
+
+
+# noinspection PyUnresolvedReferences
+class PartnerBackup(APIView):
+    """
+    Класс для создания резервной копии остатков магазина и отправки файла с остатками на почту менеджера
+    """
+
+    def post(self, request):
+        """
+        Создать резервную копию остатков магазина.
+
+        Файл с остатками отправляется на почту менеджера магазина.
+        """
+
+        # Проверка авторизации пользователя
+        if not request.user.is_authenticated:
+            return Response(Error.USER_NOT_AUTHENTICATED.value, status=403)
+
+        # Проверяем, что юзер == менеджер магазина
+        if request.user.type != 'shop':
+            return Response(Error.USER_TYPE_NOT_SHOP.value, status=403)
+
+        # определяем товары в магазине пользователя
+        user = request.user
+        all_goods_in_shop = ProductInfo.objects.filter(shop=user.shop)
+        if not all_goods_in_shop:
+            return Response(Error.SHOP_USER_NOT_RELATED.value, status=400)
+        shop_name = all_goods_in_shop.first().shop.name
+
+        # делаем бэкап базы магазина
+        backup_shop_base.delay(shop_name)
+
+        return Response({'Status': True})

@@ -8,7 +8,8 @@ from backend.utils.get_data_from_yaml import get_or_greate_product_object, updat
 
 
 @shared_task
-def task_send_email(subject: str, from_email: str, to: list, body: str, html: SafeString = None) -> None:
+def task_send_email(subject: str, from_email: str, to: list, body: str, html: SafeString = None,
+                    filename: str = None) -> None:
     """
     Task для формирования и отправки письма
 
@@ -17,6 +18,7 @@ def task_send_email(subject: str, from_email: str, to: list, body: str, html: Sa
     :param to: список адресов доставки письма
     :param body: тело письма
     :param html: шаблон с контекстом
+    :param filename: наименование файла-вложения
     :return: None
     """
     msg = EmailMultiAlternatives(
@@ -27,6 +29,11 @@ def task_send_email(subject: str, from_email: str, to: list, body: str, html: Sa
     )
     if html:
         msg.attach_alternative(html, "text/html")
+
+    # if filename:  # не видит (?)...
+    #     content = open(filename, 'rb')
+    #     msg.attach(filename, content.read(), 'text/yaml')
+
     msg.send()
 
 

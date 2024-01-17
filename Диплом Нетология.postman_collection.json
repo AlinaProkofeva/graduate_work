@@ -1392,6 +1392,39 @@
 			"response": []
 		},
 		{
+			"name": "партнер - бэкап базы магазина",
+			"request": {
+				"auth": {
+					"type": "bearer"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token \tvnffhr4iujgo4u9ugo9g",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://127.0.0.1:8000/partner/backup/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"partner",
+						"backup",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "партнер -  принять накладную, переоценку, описание товара",
 			"request": {
 				"auth": {
