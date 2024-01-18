@@ -166,3 +166,10 @@ class RateProductSerializer(serializers.Serializer):
     product_id = serializers.IntegerField(min_value=1)
     rating = serializers.IntegerField(min_value=1, max_value=5)
     review = serializers.CharField(max_length=250)
+
+
+class CreateReportSerializer(serializers.Serializer):
+    """Формирование отчета по товарам в заказах магазина за указанный период"""
+
+    from_date = serializers.DateField()
+    before_date = serializers.DateField()

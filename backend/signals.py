@@ -16,6 +16,7 @@ new_account_registered = Signal('user_id')
 new_order_state = Signal('order_id')
 new_order_created = Signal('order_id')
 backup_shop = Signal('user_id')
+new_report = Signal()
 
 
 # noinspection PyUnusedLocal
@@ -181,3 +182,18 @@ def backup_shop_signal(user_id: int, **kwargs) -> None:
     content = open(filename, 'rb')
     msg.attach(filename, content.read(), 'text/yaml')
     msg.send()
+
+
+@receiver(new_report)
+def send_report(**kwargs):
+    data = kwargs
+    data['from_date'] = data['from_date'][8:] + '.' + data['from_date'][5:7] + '.' + data['from_date'][0:4]
+    data['before_date'] = data['before_date'][8:] + '.' + data['before_date'][5:7] + '.' + data['before_date'][0:4]
+
+    subject = f'Отчет заказов {data["shop"]} за период {data["from_date"]} - {data["before_date"]}'
+    body = subject
+    from_email = settings.EMAIL_HOST_USER
+    to = [data["email"]]
+    html = get_template('backend/message_report_partner.html').render(data)
+
+    task_send_email(subject, from_email, to, body, html)

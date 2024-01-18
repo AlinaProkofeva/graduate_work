@@ -31,8 +31,9 @@ from shop_site.yasg import OrderPostSerializer, BasketDeleteSerializer, BasketPo
     manual_parameters_orderview_get, manual_parameters_orderpartner_get, PartnerOrderPostSerializer, \
     PartnerStatePostSerializer, PartnerUpdatePostSerializer, manual_parameters_partnerupdate, \
     ContactPatchSerializer, ContactDeleteSerializer, ContactPostSerializer, \
-    AccountCreatePatchSerializer, ConfirmAccountSerializer, LoginAccountSerializer, RateProductSerializer
-from .signals import new_account_registered, new_order_state, new_order_created, backup_shop
+    AccountCreatePatchSerializer, ConfirmAccountSerializer, LoginAccountSerializer, RateProductSerializer, \
+    CreateReportSerializer
+from .signals import new_account_registered, new_order_state, new_order_created, new_report
 from .utils.error_text import Error, ValidateError
 from .utils import reg_patterns
 from .utils.get_data_from_yaml import get_data_from_yaml_file, create_categories, get_data_from_all_tasks
@@ -1523,3 +1524,86 @@ class PartnerBackup(APIView):
         backup_shop_base.delay(shop_name)
 
         return Response({'Status': True})
+
+
+# noinspection PyUnresolvedReferences
+class PartnerReport(APIView):
+    """
+    Класс для отправки отчетов
+    """
+
+    @swagger_auto_schema(request_body=CreateReportSerializer)
+    def post(self, request):
+        """
+        Сформировать отчет по товарам в заказах магазина за период.
+
+        В data необходимо передать аргументы для определения временного интервала:
+        {
+        "from_date": "2024-01-01",
+        "before_date": "2024-01-31"
+        }
+
+        Сформированный отчет будет отправлен на почту менеджеру магазина.
+        """
+
+        # Проверка авторизации пользователя
+        if not request.user.is_authenticated:
+            return Response(Error.USER_NOT_AUTHENTICATED.value, status=403)
+
+        # Проверяем, что юзер == менеджер магазина
+        if request.user.type != 'shop':
+            return Response(Error.USER_TYPE_NOT_SHOP.value, status=403)
+
+        # Проверяем, что переданы необходимые аргументы
+        if not {'from_date', 'before_date'}.issubset(request.data):
+            return Response(Error.NOT_REQUIRED_ARGS.value, status=400)
+
+        from_date = request.data.get('from_date')
+        before_date = request.data.get('before_date')
+        user = request.user
+        shop = user.shop
+
+        # Делаем валидацию дат
+        if not re.fullmatch(reg_patterns.re_date, from_date):
+            return Response(Error.DATE_WRONG.value, status=400)
+        if not re.fullmatch(reg_patterns.re_date, before_date):
+            return Response(Error.DATE_WRONG.value, status=400)
+
+        try:
+            ordered = OrderItem.objects.exclude(order__state='basket').\
+                filter(product_info__shop=shop, order__datetime__gte=from_date, order__datetime__lt=before_date).\
+                annotate(total_sum=Sum(F('product_info__price') * F('quantity')))  # все заказанные позиции магазина
+        except ValidationError as e:
+            return Response({'Status': False, 'Errors': e}, status=400)
+
+        # Формируем структуру данных для таблицы отчета
+        data_structure = []
+        names = []
+        ordered_flat = []
+        for i in ordered:
+            list_ = [i.product_info.external_id, i.product_info.product.name, i.product_info.price, i.quantity,
+                     i.total_sum]
+            ordered_flat.append(list_)
+
+        for i in ordered_flat:
+            if i[1] not in names:
+                data_structure.append(i)
+                names.append(i[1])
+            else:
+                data_structure[names.index(i[1])][3] = data_structure[names.index(i[1])][3] + i[3]
+                data_structure[names.index(i[1])][4] += i[4]
+        total_sum = sum([i[4] for i in data_structure])  # общая сумма по всем позициям в заказе
+
+        signal_kwargs = {
+            "sender": self.__class__,
+            "instance": self,
+            'data_structure': data_structure,
+            'total_sum': total_sum,
+            'from_date': from_date,
+            'before_date': before_date,
+            'shop': user.shop.name,
+            'email': user.email
+        }
+        new_report.send(**signal_kwargs)
+
+        return Response({'Status': True, 'Отчет': 'Отправлен'})

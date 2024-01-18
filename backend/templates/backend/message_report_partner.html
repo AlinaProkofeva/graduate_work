@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<h2>Отчет по заказанным товарам за период {{from_date}}-{{before_date}} </h2>
+
+<table border="1" width="700">
+    <thead>
+        <tr>
+            <th>Артикул</th>
+            <th>Наименование товара</th>
+            <th>Цена</th>
+            <th>Кол-во</th>
+            <th>Сумма</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for i in data_structure %}
+        <tr>
+            {% for el in i %}
+            <td> {{el}} </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+
+    </tbody>
+</table>
+
+<h4>Общая сумма товаров в заказах за период: {{total_sum}}</h4>
+
+</body>
+</html>
