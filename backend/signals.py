@@ -1,5 +1,6 @@
 import datetime
 from datetime import timedelta
+import csv
 
 from django.core.mail import EmailMultiAlternatives
 from django.dispatch import receiver, Signal
@@ -16,7 +17,7 @@ new_account_registered = Signal('user_id')
 new_order_state = Signal('order_id')
 new_order_created = Signal('order_id')
 backup_shop = Signal('user_id')
-new_report = Signal()
+new_report = Signal('signal_kwargs')
 
 
 # noinspection PyUnusedLocal
@@ -185,8 +186,15 @@ def backup_shop_signal(user_id: int, **kwargs) -> None:
 
 
 @receiver(new_report)
-def send_report(**kwargs):
-    data = kwargs
+def send_report(signal_kwargs: dict, **kwargs) -> None:
+    """
+    Отправка письма менеджеру с отчетом в теле письма и csv-вложением.
+
+    :param signal_kwargs: словарь с данными для формирования вложения и html-отчета
+    :return: None
+    """
+
+    data = signal_kwargs
     data['from_date'] = data['from_date'][8:] + '.' + data['from_date'][5:7] + '.' + data['from_date'][0:4]
     data['before_date'] = data['before_date'][8:] + '.' + data['before_date'][5:7] + '.' + data['before_date'][0:4]
 
@@ -196,4 +204,23 @@ def send_report(**kwargs):
     to = [data["email"]]
     html = get_template('backend/message_report_partner.html').render(data)
 
-    task_send_email(subject, from_email, to, body, html)
+    table_headers = ['Артикул', 'Наименование товара', 'Цена', 'Кол-во', 'Сумма']
+    filename = f'отчет_{data["shop"]}_{data["from_date"]}_{data["before_date"]}.csv'
+
+    # создаем файл с отчетом для вложения под открытие Excel Windows
+    with open(filename, 'w', newline='', encoding='cp1251') as f:
+        writer = csv.writer(f, delimiter=';')
+        writer.writerow(table_headers)
+        writer.writerows(data['data_structure'])
+
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        from_email=from_email,
+        to=to,
+        body=body
+    )
+    msg.attach_alternative(html, "text/html")
+    content = open(filename, 'rb')
+    msg.attach(filename, content.read(), 'text/csv')
+
+    msg.send()

@@ -38,7 +38,7 @@ from .utils.error_text import Error, ValidateError
 from .utils import reg_patterns
 from .utils.get_data_from_yaml import get_data_from_yaml_file, create_categories, get_data_from_all_tasks
 from .tasks import task_load_good_from_yaml
-from .task_backup import backup_shop_base
+from .task_backup import backup_shop_base, send_report_task
 
 
 '''==================Сторона клиента========================='''
@@ -1595,8 +1595,6 @@ class PartnerReport(APIView):
         total_sum = sum([i[4] for i in data_structure])  # общая сумма по всем позициям в заказе
 
         signal_kwargs = {
-            "sender": self.__class__,
-            "instance": self,
             'data_structure': data_structure,
             'total_sum': total_sum,
             'from_date': from_date,
@@ -1604,6 +1602,6 @@ class PartnerReport(APIView):
             'shop': user.shop.name,
             'email': user.email
         }
-        new_report.send(**signal_kwargs)
+        send_report_task.delay(signal_kwargs)
 
         return Response({'Status': True, 'Отчет': 'Отправлен'})

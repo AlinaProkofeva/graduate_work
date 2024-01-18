@@ -1,7 +1,7 @@
 from celery import shared_task
 
 from backend.models import User, ProductInfo
-from backend.signals import backup_shop
+from backend.signals import backup_shop, new_report
 
 
 # noinspection PyUnresolvedReferences
@@ -43,3 +43,10 @@ def backup_shop_base(shop_name: str) -> None:
                         f.write(f'      "{param.parameter.name}": {param.value}\n')
 
     backup_shop.send(sender=User, user_id=user.id)
+
+
+@shared_task
+def send_report_task(signal_kwargs: dict) -> None:
+    """Task для отправки csv-отчета"""
+
+    new_report.send(sender=User, signal_kwargs=signal_kwargs)
