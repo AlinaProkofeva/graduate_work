@@ -38,7 +38,7 @@ from .utils.error_text import Error, ValidateError
 from .utils import reg_patterns
 from .utils.get_data_from_yaml import get_data_from_yaml_file, create_categories, get_data_from_all_tasks
 from .tasks import task_load_good_from_yaml
-from .task_backup import backup_shop_base, send_report_task
+from .task_backup_report import backup_shop_base, send_report_task
 
 
 '''==================Сторона клиента========================='''

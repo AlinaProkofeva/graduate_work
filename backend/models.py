@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
 from django.db.models import Sum, F
 from django.utils.translation import gettext_lazy as _
-from django.core.validators import MinValueValidator, MinLengthValidator
+from django.core.validators import MinValueValidator, MinLengthValidator, URLValidator
 from django_rest_passwordreset.tokens import get_token_generator
 from datetime import date, timedelta
 
@@ -173,6 +173,7 @@ class Shop(models.Model):
                             verbose_name='Название')
     url = models.URLField(null=True,
                           blank=True,
+                          validators=[URLValidator()],
                           verbose_name='Ссылка')
     state = models.BooleanField(default=True,
                                 verbose_name='Статус получения заказов')
