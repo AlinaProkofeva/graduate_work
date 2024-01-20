@@ -80,7 +80,7 @@ class RegisterAccount(APIView):
         """
 
         # проверка, что в data указаны все минимально необходимые параметры
-        if not {'first_name', 'last_name', 'password'}.issubset(request.data):
+        if not {'first_name', 'last_name', 'password', 'email'}.issubset(request.data):
             return Response(Error.NOT_REQUIRED_ARGS.value, status=400)
 
         # валидация пароля
@@ -98,10 +98,10 @@ class RegisterAccount(APIView):
 
             # отправляем письмо на email с токеном для дальнейшей активации
             new_account_registered.send(sender=self.__class__, user_id=user.id)
-            return Response(serializer.data)
+            return Response(serializer.data, status=201)
 
         else:
-            return Response(serializer.errors)
+            return Response(serializer.errors, status=400)
 
 
 # noinspection PyUnusedLocal

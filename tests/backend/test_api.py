@@ -1,9 +1,11 @@
 import random
+from unittest.mock import patch
 
 import pytest
 from django.urls import reverse
 
-from backend.models import Shop
+from backend.models import Shop, ProductInfo, User
+from backend.tasks import task_send_email
 from tests.backend.conftest import make_productinfo
 
 
@@ -160,6 +162,63 @@ def test_productinfo_get_search_filter(client_pytest, shop_1, quantity_1, filter
     make_productinfo(random.randint(1, 5))
 
     res = client_pytest.get(reverse('products'), {filter_name: filter_value})
+    assert res.status_code == 200
     data = res.json()
 
     assert len(data) == exp_res
+
+
+@pytest.mark.parametrize(
+    ['shop_name', 'category_name'],
+    (
+            ('Связной', 'ПО'),
+            ('Беталинк', 'Аксессуары')
+    )
+)
+@pytest.mark.django_db
+def test_productinfo_detail(client_pytest, shop_name, category_name):
+    """Проверка корректного получения get данных по id productinfo"""
+
+    good = make_productinfo(1, shop_name=shop_name, category_name=category_name)
+    make_productinfo(2)
+
+    res = client_pytest.get(reverse('product_detail', args=[good[0].id]))
+    assert res.status_code == 200
+
+    data = res.json()
+    assert data['id'] == good[0].id
+    assert data['shop'] == shop_name
+    assert data['product']['category'] == category_name
+
+
+@patch.object(task_send_email, 'delay')  # мокаем таску
+@pytest.mark.parametrize(
+    ['first_name', 'last_name', 'email', 'password', 'exp_res'],
+    (
+            ('Клиент', 'Тестовый', 'customer@m.ru', '1234Qwerty!!!', 201),      # все ОК
+            ('Клиент2', 'Тестовый', None, '1234Qwerty!!!', 400),                # нет почты
+            ('Клиент2', 'Тестовый', 'customer', '1234Qwerty!!!', 400),          # некорректная почта
+            ('Клиент2', None, 'customer@m.ru', '1234Qwerty!!!', 400),           # нет фамилии
+            (None, 'Тестовый', 'customer@m.ru', '1234Qwerty!!!', 400),          # нет имени
+            ('Клиент2', 'Тестовый', 'customer@m.ru', '1234', 400),              # некорректный пароль
+    )
+)
+@pytest.mark.django_db
+def test_register_user(mock_delay, client_pytest, first_name, last_name, email, password, exp_res):
+    """Проверяем регистрацию нового пользователя в неактивном статусе и с корректным типом"""
+
+    post_data = {
+        'first_name': first_name,
+        'last_name': last_name,
+        'email': email,
+        'password': password
+    }
+    res = client_pytest.post(reverse('user_register'), data=post_data)
+    assert res.status_code == exp_res
+
+    if res.status_code == 201:
+        user = User.objects.get(email=email)
+        assert user.is_active is False
+        assert user.first_name == first_name
+        assert user.last_name == last_name
+        assert user.type == 'buyer'
