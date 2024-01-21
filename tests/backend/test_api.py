@@ -43,34 +43,6 @@ def test_get_shops(client_pytest, name, url, state, exp_code, length):
 def test_productinfo_get(client_pytest, shop_1, quantity_1, shop_2, quantity_2):
     """Проверяем, что get отображает все товары во всех магазинах"""
 
-    goods_1 = make_productinfo(quantity_1, shop_1)
-    goods_2 = make_productinfo(quantity_2, shop_2)
-
-    for i in goods_1:
-        print('---', i.id, i.shop.name, i.shop.id)
-
-    for i in goods_2:
-        print('+++', i.id, i.shop.name, i.shop.id)
-
-    res = client_pytest.get(reverse('products'))
-    data = res.json()
-    assert res.status_code == 200
-
-    assert len(data) == quantity_1 + quantity_2
-
-    print('***', data)
-
-
-@pytest.mark.parametrize(
-    ['shop_1', 'quantity_1', 'shop_2', 'quantity_2'],
-    (
-            ('Связной', 2, 'Евросеть', 3),
-    )
-)
-@pytest.mark.django_db
-def test_productinfo_get(client_pytest, shop_1, quantity_1, shop_2, quantity_2):
-    """Проверяем, что get отображает все товары во всех магазинах"""
-
     make_productinfo(quantity_1, shop_1)
     make_productinfo(quantity_2, shop_2)
 
@@ -241,6 +213,7 @@ def test_register_user_buyer(mock_delay, client_pytest, first_name, last_name, e
         assert user.type == 'buyer'
 
 
+# noinspection PyUnresolvedReferences
 @patch.object(task_send_email, 'delay')
 @pytest.mark.parametrize(
     ['first_name', 'last_name', 'email', 'password', 'company', 'position', 'type_user', 'exp_res'],
@@ -323,6 +296,7 @@ def test_confirm_account(client_pytest, email, correctness, exp_res, exp_active,
         assert data == error_text
 
 
+# noinspection PyUnresolvedReferences
 @patch.object(task_send_email, 'delay')
 @pytest.mark.parametrize(
     ['email', 'arg', 'value', 'exp_res'],
@@ -344,6 +318,7 @@ def test_reset_password_request(mock_delay, client_pytest, email, arg, value, ex
         assert ResetPasswordToken.objects.filter(user=user).exists() is True
 
 
+# noinspection PyUnresolvedReferences
 @patch.object(task_send_email, 'delay')
 @pytest.mark.parametrize(
     ['email', 'arg_1', 'value_1', 'arg_2', 'value_2', 'exp_res'],
