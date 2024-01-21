@@ -3,7 +3,7 @@ from django.db import transaction, IntegrityError
 from django.urls import reverse
 from model_bakery import baker
 
-from backend.models import Shop, Category, Product, ProductInfo
+from backend.models import Shop, Category, Product, ProductInfo, User
 
 
 # noinspection PyUnresolvedReferences
@@ -120,5 +120,26 @@ def test_productinfo(make_product, make_shop, quantity, external_id, price, pric
                            external_id=external_id, price=price, price_rrc=price_rrc)
         except (IntegrityError, ValueError):
             check = True
+
+    assert check is True
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ['first_name', 'last_name', 'email', 'password'],
+    (
+            ('name', 'surname', 'any@m.ry', '1234Qwerty!!!'),
+    )
+)
+def test_not_duplicate_user(first_name, last_name, email, password):
+    """Проверяем невозможность создания пользователя с дублем почты"""
+
+    check = False
+    baker.make(User, first_name=first_name, last_name=last_name, email=email, password=password)
+    try:
+        with transaction.atomic():
+            baker.make(User, first_name=first_name, last_name=last_name, email=email, password=password)
+    except IntegrityError:
+        check = True
 
     assert check is True

@@ -3,10 +3,12 @@ from unittest.mock import patch
 
 import pytest
 from django.urls import reverse
+from model_bakery import baker
 
-from backend.models import Shop, ProductInfo, User
+from backend.models import Shop, User, ConfirmEmailToken
 from backend.tasks import task_send_email
 from tests.backend.conftest import make_productinfo
+from backend.utils.error_text import Error
 
 
 # noinspection PyUnresolvedReferences
@@ -68,8 +70,8 @@ def test_productinfo_get(client_pytest, shop_1, quantity_1, shop_2, quantity_2):
 def test_productinfo_get(client_pytest, shop_1, quantity_1, shop_2, quantity_2):
     """Проверяем, что get отображает все товары во всех магазинах"""
 
-    goods_1 = make_productinfo(quantity_1, shop_1)
-    goods_2 = make_productinfo(quantity_2, shop_2)
+    make_productinfo(quantity_1, shop_1)
+    make_productinfo(quantity_2, shop_2)
 
     res = client_pytest.get(reverse('products'))
     data = res.json()
@@ -121,7 +123,7 @@ def test_productinfo_get_filters(client_pytest, shop_1, quantity_1, shop_2, quan
         add_opt_1.update(category_name=extra_arg)
 
     goods_1 = make_productinfo(quantity_1, shop_1, **add_opt_1)
-    goods_2 = make_productinfo(quantity_2, shop_2, **add_opt_2)
+    make_productinfo(quantity_2, shop_2, **add_opt_2)
 
     # Переопределяем значения фильтров id (не задаются напрямую и могут меняться при изменении файла)
     if filter_name == 'shop_id' and filter_value is None:
@@ -153,11 +155,11 @@ def test_productinfo_get_filters(client_pytest, shop_1, quantity_1, shop_2, quan
     )
 )
 @pytest.mark.django_db
-def test_productinfo_get_search_filter(client_pytest, shop_1, quantity_1, filter_name, filter_value,
-                                 exp_res, model, prod_name, param):
+def test_productinfo_get_search_filter(client_pytest, shop_1, quantity_1, filter_name, filter_value, exp_res, model,
+                                       prod_name, param):
     """Проверяем, что get корректно отображает заданные search-фильтры"""
 
-    goods_1 = make_productinfo(quantity_1, shop_name=shop_1, model=model, prod_name=prod_name, param=param)
+    make_productinfo(quantity_1, shop_name=shop_1, model=model, prod_name=prod_name, param=param)
     make_productinfo(random.randint(1, 5))
     make_productinfo(random.randint(1, 5))
 
@@ -193,19 +195,25 @@ def test_productinfo_detail(client_pytest, shop_name, category_name):
 
 @patch.object(task_send_email, 'delay')  # мокаем таску
 @pytest.mark.parametrize(
-    ['first_name', 'last_name', 'email', 'password', 'exp_res'],
+    ['first_name', 'last_name', 'email', 'password', 'exp_res', 'error_text'],
     (
-            ('Клиент', 'Тестовый', 'customer@m.ru', '1234Qwerty!!!', 201),      # все ОК
-            ('Клиент2', 'Тестовый', None, '1234Qwerty!!!', 400),                # нет почты
-            ('Клиент2', 'Тестовый', 'customer', '1234Qwerty!!!', 400),          # некорректная почта
-            ('Клиент2', None, 'customer@m.ru', '1234Qwerty!!!', 400),           # нет фамилии
-            (None, 'Тестовый', 'customer@m.ru', '1234Qwerty!!!', 400),          # нет имени
-            ('Клиент2', 'Тестовый', 'customer@m.ru', '1234', 400),              # некорректный пароль
+            ('Клиент', 'Тестовый', 'customer@m.ru', '1234Qwerty!!!', 201, None),     # все ОК
+            ('Клиент2', 'Тестовый', None, '1234Qwerty!!!', 400,
+             'Это поле не может быть пустым.'),                                      # нет почты
+            ('Клиент2', 'Тестовый', 'customer', '1234Qwerty!!!', 400,
+             'Введите правильный адрес электронной почты.'),                         # некорректная почта
+            ('Клиент2', None, 'customer@m.ru', '1234Qwerty!!!', 400,
+             'Это поле не может быть пустым.'),                                      # нет фамилии
+            (None, 'Тестовый', 'customer@m.ru', '1234Qwerty!!!', 400,
+             'Это поле не может быть пустым.'),                                      # нет имени
+            ('Клиент2', 'Тестовый', 'customer@m.ru', '1234', 400,
+             'Введённый пароль слишком короткий.'),                                  # некорректный пароль
     )
 )
 @pytest.mark.django_db
-def test_register_user(mock_delay, client_pytest, first_name, last_name, email, password, exp_res):
-    """Проверяем регистрацию нового пользователя в неактивном статусе и с корректным типом"""
+def test_register_user_buyer(mock_delay, client_pytest, first_name, last_name, email, password, exp_res, error_text):
+    """Проверяем регистрацию нового пользователя в неактивном статусе и с корректным типом, корректную отработку
+    валидации и возврат ошибок в response"""
 
     post_data = {
         'first_name': first_name,
@@ -216,9 +224,99 @@ def test_register_user(mock_delay, client_pytest, first_name, last_name, email, 
     res = client_pytest.post(reverse('user_register'), data=post_data)
     assert res.status_code == exp_res
 
+    # проверяем сообщения об ошибке в response
+    data = res.json()
+    if res.status_code != 201:
+        if len(data) == 1:
+            assert error_text in list(data.values())[0][0]
+        else:
+            assert True in list(map(lambda x: error_text in x, list(data.values())[1]))
+
     if res.status_code == 201:
         user = User.objects.get(email=email)
         assert user.is_active is False
         assert user.first_name == first_name
         assert user.last_name == last_name
         assert user.type == 'buyer'
+
+
+@patch.object(task_send_email, 'delay')
+@pytest.mark.parametrize(
+    ['first_name', 'last_name', 'email', 'password', 'company', 'position', 'type_user', 'exp_res'],
+    (
+            ('Менеджер', 'Тестовый', 'manager@m.ru', '1234Qwerty!!!',
+             'Связной', 'manager', 'shop', 201),                            # все ОК
+            ('Менеджер', 'Тестовый', 'manager@m.ru', '1234Qwerty!!!',
+             'Связной', 'manager', 'False', 400),                           # некорректный тип пользователя
+    )
+)
+@pytest.mark.django_db
+def test_register_user_manager(mock_delay, client_pytest, first_name, last_name, email, password, company, position,
+                               type_user, exp_res):
+    """Проверяем регистрацию нового менеджера магазина в неактивном статусе и с корректным типом, создание токена
+    для активации аккаунта"""
+
+    post_data = {
+        'first_name': first_name,
+        'last_name': last_name,
+        'email': email,
+        'password': password,
+        'company': company,
+        'position': position,
+        'type': type_user
+    }
+    res = client_pytest.post(reverse('user_register'), data=post_data)
+    assert res.status_code == exp_res
+
+    if res.status_code == 201:
+        user = User.objects.get(email=email)
+        assert user.is_active is False
+        assert user.first_name == first_name
+        assert user.last_name == last_name
+        assert user.company == company
+        assert user.position == position
+        assert user.type == type_user
+
+        # Проверяем, что пользователю был выписан токен активации
+        activate_token = ConfirmEmailToken.objects.get(user=user)
+        assert user.confirm_email_token.first().token == activate_token.token
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ['email', 'correctness', 'exp_res', 'exp_active', 'arg_1', 'value_1', 'arg_2', 'value_2', 'error_text'],
+    (
+            ('any@m.ru', True, 200, True, None, None, None, None, None),            # все ОК
+            ('any@m.ru', False, 400, False, 'email', 'any@m.ru', 'None', 'None',
+             Error.NOT_REQUIRED_ARGS.value),                                        # нет токена в data
+            ('any@m.ru', False, 400, False, 'token', '1234rf', 'None', 'None',
+             Error.NOT_REQUIRED_ARGS.value),                                        # нет почты в data
+            ('any@m.ru', False, 400, False, 'email', 'any', 'token', '1234rf',
+             Error.EMAIL_WRONG.value),                                              # некорректная почта
+            ('any@m.ru', False, 400, False, 'email', 'any@m.ru', 'token', '1234rf',
+             Error.EMAIL_OR_TOKEN_WRONG.value),                                     # некорректный токен
+    )
+)
+def test_confirm_account(client_pytest, email, correctness, exp_res, exp_active, arg_1, value_1, arg_2, value_2,
+                         error_text):
+    """Проверяем активацию пользователя при подтверждении регистрации, валидацию данных и корректность response при
+    ошибках"""
+
+    user = baker.make(User, email=email)
+    assert user.is_active is False
+    activate_token = baker.make(ConfirmEmailToken, user=user)
+
+    post_data = {}
+    if correctness:
+        post_data.update(email=email, token=activate_token.token)
+    else:
+        kw = {arg_1: value_1, arg_2: value_2}
+        post_data.update(**kw)
+
+    res = client_pytest.post(reverse('user_register_confirm'), post_data)
+    assert res.status_code == exp_res
+    assert User.objects.filter(email=email).first().is_active == exp_active
+
+    data = res.json()
+    if exp_res != 200:
+        assert data == error_text
