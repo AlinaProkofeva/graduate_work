@@ -1,10 +1,13 @@
 import random
 from unittest.mock import patch
+
+import oauth2_provider
 import pytest
 from django.contrib.auth.hashers import check_password
 from django.urls import reverse
 from django_rest_passwordreset.models import ResetPasswordToken
 from model_bakery import baker
+from rest_framework.authtoken.models import Token
 
 from backend.models import Shop, User, ConfirmEmailToken
 from backend.tasks import task_send_email
@@ -349,3 +352,63 @@ def test_reset_password_confirm(mock_delay, client_pytest, email, arg_1, value_1
         passw = User.objects.get(email=email).password
         check = check_password(value_1, passw)
         assert check is True
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ['email', 'password', 'arg_1', 'value_1', 'arg_2', 'value_2', 'exp_res', 'exp_error'],
+    (
+            ('any@m.ru', '1234Qwerty!', 'email', 'any@m.ru', 'password', '1234Qwerty!',
+             201, None),                                                                 # все ОК
+            ('any@m.ru', '1234Qwerty!', 'email', 'none@m.ru', 'password', '1234Qwerty!',
+             400, Error.AUTH_FAILED.value),                                              # неверная почта
+            ('any@m.ru', '1234Qwerty!', 'emai', 'none@m.ru', 'password', '1234Qwerty!',
+             400, Error.NOT_REQUIRED_ARGS.value),                                        # нет почты в data
+            ('any@m.ru', '1234Qwerty!', 'email', 'none@m.ru', 'passwor', '1234Qwerty!',
+             400, Error.NOT_REQUIRED_ARGS.value),                                        # нет пароля в data
+            ('any@m.ru', '1234Qwerty!', 'email', 'None', 'password', '1234Qwerty!',
+             400, Error.EMAIL_WRONG.value),                                              # неверный формат почты
+    )
+)
+def test_login_account_not_vk(client_pytest, email, password, arg_1, value_1, arg_2, value_2, exp_res, exp_error):
+    """Проверяем авторизацию пользователя и корректность возвращаемых ошибок в response, НЕ через VK"""
+
+    user = User.objects.create_user(email=email, password=password, is_active=True)
+    # baker.make(User, email=email, password=password, is_active=True)  # не хэширует пароль при создании О_о
+
+    post_data = {arg_1: value_1, arg_2: value_2}
+    res = client_pytest.post(reverse('user_login'), post_data)
+    data = res.json()
+
+    assert res.status_code == exp_res
+
+    if res.status_code == 201:
+        assert data['Token'] == Token.objects.get(user=user).key
+    else:
+        assert data == exp_error
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ['email', 'password', 'arg_1', 'value_1', 'exp_res'],
+    (
+            ('any@m.ru', '1234Qwerty!', 'email', 'TO_UPD', 201),         # все ОК
+            ('any@m.ru', '1234Qwerty!', 'email', '1234r', 400),          # несуществующий access token
+
+    )
+)
+def test_login_account_vk(client_pytest, email, password, arg_1, value_1, exp_res):
+    """Проверяем авторизацию при регистрации через VK (по VK access token)"""
+
+    user = User.objects.create_user(email=email, password=password, is_active=True)
+    vk_token = baker.make(oauth2_provider.models.AccessToken, user=user)
+    if value_1 == 'TO_UPD':
+        value_1 = vk_token.token
+
+    post_data = {arg_1: value_1}
+    res = client_pytest.post(reverse('user_login'), post_data)
+    data = res.json()
+
+    assert res.status_code == exp_res
+    if res.status_code == 201:
+        assert data['Token'] == Token.objects.get(user=user).key

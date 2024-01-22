@@ -6,7 +6,6 @@ from django_rest_passwordreset.views import ResetPasswordRequestToken, ResetPass
 # from yaml import load as load_yaml, Loader, safe_load
 from distutils.util import strtobool
 from django.contrib.auth.password_validation import validate_password
-from django.contrib.auth import authenticate
 from django.db import IntegrityError
 from django.db.models import Sum, F, Q
 from django.core.validators import URLValidator
@@ -22,7 +21,7 @@ from drf_yasg.utils import swagger_auto_schema
 
 import backend.models
 from backend.models import Order, Shop, OrderItem, ProductInfo, Category, Contact, ConfirmEmailToken, Address, \
-    RatingProduct
+    RatingProduct, User
 from .filters import ProductsFilter, query_filter_maker
 from .serializers import ShopSerializer, OrderCustomerSerializer, ProductParameterSerializer, CategorySerializer, \
     OrderPartnerSerializer, ContactSerializer, BasketSerializer, OrderItemCreateSerializer, UserSerializer, \
@@ -33,7 +32,7 @@ from shop_site.yasg import OrderPostSerializer, BasketDeleteSerializer, BasketPo
     ContactPatchSerializer, ContactDeleteSerializer, ContactPostSerializer, \
     AccountCreatePatchSerializer, ConfirmAccountSerializer, LoginAccountSerializer, RateProductSerializer, \
     CreateReportSerializer
-from .signals import new_account_registered, new_order_state, new_order_created, new_report
+from .signals import new_account_registered, new_order_state, new_order_created
 from .utils.error_text import Error, ValidateError
 from .utils import reg_patterns
 from .utils.get_data_from_yaml import get_data_from_yaml_file, create_categories, get_data_from_all_tasks
@@ -200,7 +199,7 @@ class LoginAccount(APIView):
         soc_token = oauth2_provider.models.AccessToken.objects.filter(token=request.data.get('email')).first()
         if soc_token:
             token, _ = Token.objects.get_or_create(user=soc_token.user)
-            return Response({'Status': True, 'Token': token.key})
+            return Response({'Status': True, 'Token': token.key}, status=201)
 
         else:
             # проверяем, что все необходимые данные переданы в data
@@ -212,13 +211,21 @@ class LoginAccount(APIView):
                 return Response(Error.EMAIL_WRONG.value, status=400)
 
             # проверяем, что пользователь с такими данными существует и активен
-            user = authenticate(email=request.data['email'], password=request.data['password'])
 
-            if not user or not user.is_active:
+            # authenticate - не работает с pytest ??? NoReverseMatch: Reverse for 'authorize' not found in DjangoOAuth2
+            #     AUTHORIZATION_URL = reverse(DRFSO2_URL_NAMESPACE + ':authorize'
+            # user = authenticate(email=request.data['email'], password=request.data['password'])
+            user = User.objects.filter(email=request.data['email'])
+            check = False
+            if user:
+                check = user.first().check_password(request.data['password'])
+                user = user.first()
+
+            if not check or not user.is_active:
                 return Response(Error.AUTH_FAILED.value, status=400)
 
             token, _ = Token.objects.get_or_create(user=user)
-            return Response({'Status': True, 'Token': token.key})
+            return Response({'Status': True, 'Token': token.key}, status=201)
 
 
 # noinspection PyUnusedLocal
