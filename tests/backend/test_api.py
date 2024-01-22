@@ -412,3 +412,39 @@ def test_login_account_vk(client_pytest, email, password, arg_1, value_1, exp_re
     assert res.status_code == exp_res
     if res.status_code == 201:
         assert data['Token'] == Token.objects.get(user=user).key
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ['email', 'test_token', 'exp_res', 'exp_res_text', 'exp_check_token'],
+    (
+            ('any@m.ru', 'TO_UPD',  200, {'Status': True}, False),                            # все ОК
+            ('any@m.ru', 'random_token',  401, {'detail': 'Недопустимый токен.'}, True ),     # неверный токен
+            ('any@m.ru', None,  403, Error.USER_NOT_AUTHENTICATED.value, True ),              # нет токена в headers
+
+    )
+)
+def test_logout(client_pytest, test_token, email, exp_res, exp_res_text, exp_check_token):
+    """Проверяем выход из системы, удаление auth-токена"""
+
+    user = User.objects.create_user(email=email, is_active=True)
+    auth_token = Token.objects.create(user=user)
+
+    user_token = None
+    if test_token == 'TO_UPD':
+        user_token = auth_token.key
+    elif test_token == 'random_token':
+        user_token = test_token
+    elif test_token is None:
+        pass
+
+    if user_token:
+        client_pytest.credentials(HTTP_AUTHORIZATION=f'Token {user_token}')
+
+    res = client_pytest.post(reverse('user_logout'))
+    data = res.json()
+    check_auth_token = Token.objects.filter(user=user).exists()
+
+    assert res.status_code == exp_res
+    assert data == exp_res_text
+    assert check_auth_token == exp_check_token
