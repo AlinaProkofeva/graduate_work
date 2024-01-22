@@ -496,7 +496,7 @@ class RateProduct(APIView):
             return Response(Error.RATING_DUPLICATE.value, status=400)
 
         serializer = ReviewSerializer(rate)
-        return Response({'Status': 'Success', 'Добавлена оценка': serializer.data})
+        return Response({'Status': 'Success', 'Добавлена оценка': serializer.data}, status=201)
 
 
 # noinspection PyUnresolvedReferences

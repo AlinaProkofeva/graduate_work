@@ -9,7 +9,7 @@ from django_rest_passwordreset.models import ResetPasswordToken
 from model_bakery import baker
 from rest_framework.authtoken.models import Token
 
-from backend.models import Shop, User, ConfirmEmailToken
+from backend.models import Shop, User, ConfirmEmailToken, Category, Order, OrderItem
 from backend.tasks import task_send_email
 from tests.backend.conftest import make_productinfo
 from backend.utils.error_text import Error
@@ -354,6 +354,7 @@ def test_reset_password_confirm(mock_delay, client_pytest, email, arg_1, value_1
         assert check is True
 
 
+# noinspection PyUnresolvedReferences
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     ['email', 'password', 'arg_1', 'value_1', 'arg_2', 'value_2', 'exp_res', 'exp_error'],
@@ -388,6 +389,7 @@ def test_login_account_not_vk(client_pytest, email, password, arg_1, value_1, ar
         assert data == exp_error
 
 
+# noinspection PyUnresolvedReferences
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     ['email', 'password', 'arg_1', 'value_1', 'exp_res'],
@@ -414,13 +416,14 @@ def test_login_account_vk(client_pytest, email, password, arg_1, value_1, exp_re
         assert data['Token'] == Token.objects.get(user=user).key
 
 
+# noinspection PyUnresolvedReferences
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     ['email', 'test_token', 'exp_res', 'exp_res_text', 'exp_check_token'],
     (
             ('any@m.ru', 'TO_UPD',  200, {'Status': True}, False),                            # все ОК
-            ('any@m.ru', 'random_token',  401, {'detail': 'Недопустимый токен.'}, True ),     # неверный токен
-            ('any@m.ru', None,  403, Error.USER_NOT_AUTHENTICATED.value, True ),              # нет токена в headers
+            ('any@m.ru', 'random_token',  401, {'detail': 'Недопустимый токен.'}, True),      # неверный токен
+            ('any@m.ru', None,  403, Error.USER_NOT_AUTHENTICATED.value, True),               # нет токена в headers
 
     )
 )
@@ -450,6 +453,7 @@ def test_logout(client_pytest, test_token, email, exp_res, exp_res_text, exp_che
     assert check_auth_token == exp_check_token
 
 
+# noinspection PyUnresolvedReferences
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     ['email', 'first_name', 'last_name',  'company', 'position', 'user_type', 'test_token', 'exp_res', 'exp_res_text'],
@@ -465,8 +469,8 @@ def test_logout(client_pytest, test_token, email, exp_res, exp_res_text, exp_che
 
     )
 )
-def test_get_account_details(client_pytest, email, first_name, last_name, company, position, user_type, test_token, exp_res,
-                             exp_res_text):
+def test_get_account_details(client_pytest, email, first_name, last_name, company, position, user_type, test_token,
+                             exp_res, exp_res_text):
     """Проверяем отображение основной информации об аккаунте, корректное отображение информации об ошибках в
     response, корректность сериалайзера для менеджера"""
 
@@ -507,6 +511,7 @@ def test_get_account_details(client_pytest, email, first_name, last_name, compan
         assert data == exp_res_text
 
 
+# noinspection PyUnresolvedReferences
 @patch.object(task_send_email, 'delay')
 @pytest.mark.django_db
 @pytest.mark.parametrize(
@@ -528,11 +533,13 @@ def test_get_account_details(client_pytest, email, first_name, last_name, compan
     )
 )
 def test_patch_account_details(mock_delay, client_pytest, email, arg_1, value_1, test_token, exp_res, exp_res_text):
-    """Проверяем редактирование данных аккаунта пользователя, корректность response при ошибках"""
+    """Проверяем редактирование данных аккаунта пользователя, корректность response, детализацию ошибок"""
 
+    # создаем пользователя и auth-token для него
     user = baker.make(User, email=email, is_active=True)
     auth_token = Token.objects.create(user=user)
 
+    # определяем токен для headers в запросе
     user_token = None
     if test_token == 'TO_UPD':
         user_token = auth_token.key
@@ -541,9 +548,11 @@ def test_patch_account_details(mock_delay, client_pytest, email, arg_1, value_1,
     elif test_token is None:
         pass
 
+    # устанавливаем токен в headers
     if user_token:
         client_pytest.credentials(HTTP_AUTHORIZATION=f'Token {user_token}')
 
+    # определяем data для запроса и отправляем запрос
     post_data = {}
     if arg_1:
         post_data = {arg_1: value_1}
@@ -565,3 +574,182 @@ def test_patch_account_details(mock_delay, client_pytest, email, arg_1, value_1,
             assert user.check_password(value_1) is True
         else:
             assert data[arg_1] == value_1
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ['exp_res_1', 'quantity'],
+    (
+            (200, 10),
+    )
+)
+def test_get_categories(client_pytest, exp_res_1, quantity):
+    """Проверяем получение категорий товара, что отображает все и названию соответствуют имеющимся в базе"""
+
+    cats = baker.make(Category, _quantity=quantity)
+
+    res = client_pytest.get(reverse('categories'))
+    data = res.json()
+
+    assert res.status_code == exp_res_1
+    assert len(data) == quantity
+
+    # упорядочиваем по id, т.к. сортировка по наименованию по умолчанию
+    data.sort(key=lambda x: x['id'])
+    for index, i in enumerate(data):
+        assert i['name'] == cats[index].name
+
+
+# noinspection PyUnresolvedReferences
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ['email', 'test_token', 'is_buyer', 'arg_1', 'value_1', 'arg_2', 'value_2', 'arg_3', 'value_3', 'exp_res',
+     'exp_error_text'],
+    (
+        ('any@m.ru', None, False, None, None, None, None, None, None,
+         403, Error.USER_NOT_AUTHENTICATED.value),                                  # нет токена в headers
+        ('any@m.ru', 'TO_UPD', False, None, None, None, None, None, None,
+         400, Error.NOT_REQUIRED_ARGS.value),                                       # нет product_id & rating в data
+        ('any@m.ru', 'TO_UPD', False, 'product_id', 1, None, None, None, None,
+         400, Error.NOT_REQUIRED_ARGS.value),                                       # нет rating в data
+        ('any@m.ru', 'TO_UPD', False, None, None, 'rating', 4, None, None,
+         400, Error.NOT_REQUIRED_ARGS.value),                                       # нет product_id  в data
+        ('any@m.ru', 'TO_UPD', False, 'product_id', 'qwe', 'rating', 4, None, None,
+         400, Error.PRODUCT_ID_WRONG_TYPE.value),                                   # некорректный id товара
+        ('any@m.ru', 'TO_UPD', False, 'product_id', 1, 'rating', 'qw', None, None,
+         400, Error.RATING_WRONG_TYPE_OR_VALUE.value),                              # некорректный rating товара
+        ('any@m.ru', 'TO_UPD', False, 'product_id', 1, 'rating', '4', None, None,
+         400, Error.BUYER_ONLY.value),                                              # не покупал товар
+        ('any@m.ru', 'TO_UPD', True, 'product_id', 1, 'rating', '4', None, None,
+         201, None),                                                                # ОК, без отзыва
+        ('any@m.ru', 'TO_UPD', True, 'product_id', 1, 'rating', '5', 'review', 'Огонь',
+         201, None),                                                                # ОК, с отзывом
+    )
+)
+def test_rate_product(client_pytest, email, test_token, is_buyer, arg_1, value_1, arg_2, value_2, arg_3, value_3,
+                      exp_res, exp_error_text):
+    """Проверяем выставление оценки и отправку отзыва покупателем на товар, корректность отображения response и
+    детализации ошибок, отображение выставленной оценки в детализации товара"""
+
+    # создаем пользователя и auth-token для него
+    user = User.objects.create_user(email=email, is_active=True)
+    auth_token = Token.objects.create(user=user)
+
+    goods = make_productinfo(5)
+
+    # если покупатель, создаем пользователю заказ с оцениваемым продуктом
+    if is_buyer:
+        order = baker.make(Order, user=user)
+        value_1 = goods[0].id
+        baker.make(OrderItem, product_info_id=value_1, order=order)
+
+    # определяем токен для headers в запросе
+    user_token = None
+    if test_token == 'TO_UPD':
+        user_token = auth_token.key
+    elif test_token == 'random_token':
+        user_token = test_token
+    elif test_token is None:
+        pass
+
+    # устанавливаем токен в headers
+    if user_token:
+        client_pytest.credentials(HTTP_AUTHORIZATION=f'Token {user_token}')
+
+    # определяем data для запроса и отправляем запрос
+    post_data_1 = {}
+    post_data_2 = {}
+    post_data_3 = {}
+    if arg_1:
+        post_data_1 = {arg_1: value_1}
+    if arg_2:
+        post_data_2 = {arg_2: value_2}
+    if arg_3:
+        post_data_3 = {arg_3: value_3}
+    post_data = {**post_data_1, **post_data_2, **post_data_3}
+
+    res = client_pytest.post(reverse('rate_product'), data=post_data)
+    data = res.json()
+
+    assert res.status_code == exp_res
+
+    if res.status_code != 201:
+        assert data == exp_error_text
+    else:
+        assert data == {'Status': 'Success', 'Добавлена оценка': {'buyer': ' ', 'rating': f'{value_2}',
+                                                                  'review': value_3}}
+        # проверяем, что выставленная оценка отобразилась в описании товара
+        res_2 = client_pytest.get(reverse('product_detail', args=[value_1]))
+        data_2 = res_2.json()
+        assert data_2['ratings'][0]['rating'] == value_2
+
+
+# noinspection PyUnresolvedReferences
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ['email', 'arg_1', 'value_1', 'arg_2', 'value_2', 'arg_3', 'value_3', 'exp_res_1', 'exp_res_2', 'exp_error_text',
+     'exp_total_rating', 'check'],
+    (
+        ('any@m.ru', 'product_id', 1, 'rating', '4', 'rating', '5', 201, 201,
+         None, 4.5, 'sum'),                                                     # Все ОК-1
+        ('any@m.ru', 'product_id', 1, 'rating', '5', 'rating', '1', 201, 400,
+         Error.RATING_DUPLICATE.value, None, 'duplicate'),                      # Дубликат оценки клиентом
+        ('any@m.ru', 'product_id', 1, 'rating', '1', 'rating', '5', 201, 201,
+         None, 3, 'sum'),                                                       # Все ОК-2
+    )
+)
+def test_rate_product_sum(client_pytest, email, arg_1, value_1, arg_2, value_2, arg_3, value_3, exp_res_1, exp_res_2,
+                          exp_error_text, exp_total_rating, check):
+    """Проверяем многократную оценку: запрет повторной оценки тем же пользователем + корректная детализация ошибки
+    в response, корректный расчет средней оценки при ее отображении в детализации товара"""
+
+    # создаем 1-го пользователя и auth-token для него
+    user = User.objects.create_user(email=email, is_active=True)
+    auth_token = Token.objects.create(user=user)
+    user_token = auth_token.key
+
+    # создаем пользователю заказ с оцениваемым продуктом
+    goods = make_productinfo(5)
+    order = baker.make(Order, user=user)
+    value_1 = goods[0].id
+    baker.make(OrderItem, product_info_id=value_1, order=order)
+
+    # определяем data для запроса и отправляем запрос
+    post_data = {arg_1: value_1, arg_2: value_2}
+    client_pytest.credentials(HTTP_AUTHORIZATION=f'Token {user_token}')
+    res = client_pytest.post(reverse('rate_product'), data=post_data)
+    assert res.status_code == exp_res_1
+
+    # Проверяем, что нельзя повторно оставить оценку на товар
+    if check == 'duplicate':
+        post_data = {arg_1: value_1, arg_3: value_3}
+        res = client_pytest.post(reverse('rate_product'), data=post_data)
+        data = res.json()
+
+        assert res.status_code == exp_res_2
+        assert data == exp_error_text
+
+    # Проверяем, что рейтинг товара рассчитывается корректно при отправке второй оценки
+    elif check == 'sum':
+        # создаем 2-го пользователя, токен и заказ с товаром
+        user = User.objects.create_user(email='new@m.ru', is_active=True)
+        auth_token = Token.objects.create(user=user)
+        user_token = auth_token.key
+        order = baker.make(Order, user=user)
+        value_1 = goods[0].id
+        baker.make(OrderItem, product_info_id=value_1, order=order)
+
+        # определяем data для запроса и отправляем запрос
+        post_data = {arg_1: value_1, arg_3: value_3}
+        client_pytest.credentials(HTTP_AUTHORIZATION=f'Token {user_token}')
+        res = client_pytest.post(reverse('rate_product'), data=post_data)
+        data = res.json()
+
+        assert res.status_code == exp_res_2
+        assert data['Добавлена оценка']['rating'] == value_3
+
+        # проверяем, что выставленные оценки корректно просуммировались в детализации товара
+        res_2 = client_pytest.get(reverse('product_detail', args=[value_1]))
+        data_2 = res_2.json()
+
+        assert data_2['total_rating'] == exp_total_rating
