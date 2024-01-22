@@ -448,3 +448,120 @@ def test_logout(client_pytest, test_token, email, exp_res, exp_res_text, exp_che
     assert res.status_code == exp_res
     assert data == exp_res_text
     assert check_auth_token == exp_check_token
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ['email', 'first_name', 'last_name',  'company', 'position', 'user_type', 'test_token', 'exp_res', 'exp_res_text'],
+    (
+            ('any@m.ru', 'Покупатель', 'Тестовый', None, None, None,
+             'TO_UPD', 200, None),                                          # покупатель ОК
+            ('any@m.ru', 'Покупатель', 'Тестовый', None, None, None,
+             None, 403, Error.USER_NOT_AUTHENTICATED.value),                # нет авторизации
+            ('any@m.ru', 'Покупатель', 'Тестовый', None, None, None,
+             'random_token', 401, {'detail': 'Недопустимый токен.'}),       # нет авторизации
+            ('any@m.ru', 'Менеджер', 'Тестовый', 'Евросеть', 'ТД', 'shop',
+             'TO_UPD', 200, None),                                          # менеджер ОК
+
+    )
+)
+def test_get_account_details(client_pytest, email, first_name, last_name, company, position, user_type, test_token, exp_res,
+                             exp_res_text):
+    """Проверяем отображение основной информации об аккаунте, корректное отображение информации об ошибках в
+    response, корректность сериалайзера для менеджера"""
+
+    user_data = {'email': email, 'first_name': first_name, 'last_name': last_name}
+    if company or position or user_type:
+        user_data.update(company=company, position=position, type=user_type)
+
+    user = User.objects.create_user(is_active=True, **user_data)
+    auth_token = Token.objects.create(user=user)
+
+    user_token = None
+    if test_token == 'TO_UPD':
+        user_token = auth_token.key
+    elif test_token == 'random_token':
+        user_token = test_token
+    elif test_token is None:
+        pass
+
+    if user_token:
+        client_pytest.credentials(HTTP_AUTHORIZATION=f'Token {user_token}')
+
+    res = client_pytest.get(reverse('user_details'))
+    data = res.json()
+
+    assert res.status_code == exp_res
+
+    if res.status_code == 200:
+        assert data['first_name'] == first_name
+        assert data['last_name'] == last_name
+        assert data['email'] == email
+
+        if user.type == 'shop':
+            assert data['company'] == company
+            assert data['position'] == position
+            assert data['type'] == user_type
+
+    else:
+        assert data == exp_res_text
+
+
+@patch.object(task_send_email, 'delay')
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ['email', 'arg_1', 'value_1',  'test_token', 'exp_res', 'exp_res_text'],
+    (
+            ('any@m.ru', '', '', None, 403, Error.USER_NOT_AUTHENTICATED.value),     # нет токена в data
+            ('any@m.ru', '', '', 'TO_UPD', 400, Error.NOT_REQUIRED_ARGS.value),      # нет новых данных
+            ('any@m.ru', 'password', '1234', 'TO_UPD', 400, None),                   # некорректный новый пароль
+            ('any@m.ru', 'email', '1234', 'TO_UPD', 400, Error.EMAIL_WRONG.value),   # некорректная новая почта
+            ('any@m.ru', 'first_name', 'НовоеИмя', 'TO_UPD', 200, None),             # ОК, новое имя
+            ('any@m.ru', 'last_name', 'НоваяФамилия', 'TO_UPD', 200, None),          # ОК, новая фамилия
+            ('any@m.ru', 'company', 'НоваяКомпания', 'TO_UPD', 200, None),           # ОК, новая компания
+            ('any@m.ru', 'position', 'НоваяДолжность', 'TO_UPD', 200, None),         # ОК, новая должность
+            ('any@m.ru', 'type', 'shop', 'TO_UPD', 200, None),                       # ОК, новый тип
+            ('any@m.ru', 'type', 'shopqqw', 'TO_UPD', 400, None),                    # неверный тип пользователя
+            ('any@m.ru', 'password', 'Qwerty1234!', 'TO_UPD', 200, None),            # ОК, новый пароль
+            ('any@m.ru', 'email', 'new@m.ru', 'TO_UPD', 200, None),                  # ОК, новая почта
+
+    )
+)
+def test_patch_account_details(mock_delay, client_pytest, email, arg_1, value_1, test_token, exp_res, exp_res_text):
+    """Проверяем редактирование данных аккаунта пользователя, корректность response при ошибках"""
+
+    user = baker.make(User, email=email, is_active=True)
+    auth_token = Token.objects.create(user=user)
+
+    user_token = None
+    if test_token == 'TO_UPD':
+        user_token = auth_token.key
+    elif test_token == 'random_token':
+        user_token = test_token
+    elif test_token is None:
+        pass
+
+    if user_token:
+        client_pytest.credentials(HTTP_AUTHORIZATION=f'Token {user_token}')
+
+    post_data = {}
+    if arg_1:
+        post_data = {arg_1: value_1}
+    res = client_pytest.patch(reverse('user_details'), data=post_data)
+    data = res.json()
+
+    assert res.status_code == exp_res
+
+    if res.status_code != 200:
+        if arg_1 == 'password':
+            assert 'Введённый пароль слишком короткий.' in data['Errors'][0]
+        elif arg_1 == 'type':
+            assert f'Значения {value_1} нет среди допустимых вариантов.' in list(data['Error'].values())[0]
+        else:
+            assert data == exp_res_text
+    else:
+        if arg_1 == 'password':
+            user = User.objects.get(email=email)
+            assert user.check_password(value_1) is True
+        else:
+            assert data[arg_1] == value_1
