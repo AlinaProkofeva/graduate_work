@@ -211,10 +211,6 @@ class LoginAccount(APIView):
                 return Response(Error.EMAIL_WRONG.value, status=400)
 
             # проверяем, что пользователь с такими данными существует и активен
-
-            # authenticate - не работает с pytest ??? NoReverseMatch: Reverse for 'authorize' not found in DjangoOAuth2
-            #     AUTHORIZATION_URL = reverse(DRFSO2_URL_NAMESPACE + ':authorize'
-            # user = authenticate(email=request.data['email'], password=request.data['password'])
             user = User.objects.filter(email=request.data['email'])
             check = False
             if user:
