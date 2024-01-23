@@ -9,7 +9,7 @@ from django_rest_passwordreset.models import ResetPasswordToken
 from model_bakery import baker
 from rest_framework.authtoken.models import Token
 
-from backend.models import Shop, User, ConfirmEmailToken, Category, Order, OrderItem
+from backend.models import Shop, User, ConfirmEmailToken, Category, Order, OrderItem, Contact, Address
 from backend.tasks import task_send_email
 from tests.backend.conftest import make_productinfo
 from backend.utils.error_text import Error
@@ -753,3 +753,147 @@ def test_rate_product_sum(client_pytest, email, arg_1, value_1, arg_2, value_2, 
         data_2 = res_2.json()
 
         assert data_2['total_rating'] == exp_total_rating
+
+
+# noinspection PyUnresolvedReferences
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ['email', 'test_token', 'exp_res', 'exp_error_text', 'addresses_quantity'],
+    (
+        ('any@m.ru', None, 403, Error.USER_NOT_AUTHENTICATED.value, None),          # нет токена в headers
+        ('any@m.ru', 'TO_UPD', 200, None, 3),                                       # все OK
+        ('any@m.ru', 'random_token', 401, {'detail': 'Недопустимый токен.'}, 1),    # неверный токен
+    )
+)
+def test_contact_get(client_pytest, email, test_token, exp_res, exp_error_text, addresses_quantity):
+    """Проверяем корректное получение контактов пользователя, корректное отображение адресов из базы, корректное
+    отображение ошибок в response"""
+
+    # создаем пользователя, auth-token для него, контакты
+    user = User.objects.create_user(email=email, is_active=True)
+    auth_token = Token.objects.create(user=user)
+    contact_1 = baker.make(Contact, user=user)
+    addresses = baker.make(Address, contact=contact_1, _quantity=addresses_quantity)
+    baker.make(Address, _quantity=5)  # рандомные адреса, не должны отобразиться
+
+    # определяем токен для headers в запросе
+    user_token = None
+    if test_token == 'TO_UPD':
+        user_token = auth_token.key
+    elif test_token == 'random_token':
+        user_token = test_token
+    elif test_token is None:
+        pass
+
+    # устанавливаем токен в headers и отправляем запрос
+    if user_token:
+        client_pytest.credentials(HTTP_AUTHORIZATION=f'Token {user_token}')
+    res = client_pytest.get(reverse('user_contact'))
+    data = res.json()
+
+    assert res.status_code == exp_res
+    if res.status_code != 200:
+        assert data == exp_error_text
+
+    else:
+        assert data[0]['phone'] == contact_1.phone
+        assert 'addresses' in data[0]
+        data_addresses = data[0]['addresses']
+        data_addresses.sort(key=lambda x: x['id'])
+
+        assert len(data_addresses) == addresses_quantity
+        for index, i in enumerate(data_addresses):
+            assert i['region'] == addresses[index].region
+            assert i['district'] == addresses[index].district
+            assert i['settlement'] == addresses[index].settlement
+            assert i['street'] == addresses[index].street
+            assert i['house'] == addresses[index].house
+            assert i['structure'] == addresses[index].structure
+            assert i['building'] == addresses[index].building
+            assert i['apartment'] == addresses[index].apartment
+
+
+# noinspection PyUnresolvedReferences
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ['email', 'test_token', 'arg_1', 'value_1', 'arg_2', 'value_2', 'arg_3', 'value_3', 'exp_res', 'exp_error_text',
+     'test_max', 'is_first'],
+    (
+        ('any@m.ru', None, None, None, None, None, None, None, 403,
+         Error.USER_NOT_AUTHENTICATED.value, False, None),                          # нет токена в headers
+        ('any@m.ru', 'random_token', None, None, None, None, None, None, 401,
+         {'detail': 'Недопустимый токен.'}, False, None),                           # неверный токен
+        ('any@m.ru', 'TO_UPD', 'region', 'qwe', None, None, None, None, 400,
+         Error.NOT_REQUIRED_ARGS.value, False, None),                               # нет street
+        ('any@m.ru', 'TO_UPD', None, None, 'street', 'Ert', None, None, 400,
+         Error.NOT_REQUIRED_ARGS.value, False, None),                               # нет region
+        ('any@m.ru', 'TO_UPD', 'region', 'Eee', 'street', 'Ert', None, None, 400,
+         Error.CONTACTS_EXCEEDING.value, True, None),                               # превышение лимита адресов
+        ('any@m.ru', 'TO_UPD', 'region', 'Eee', 'street', 'Ert', None, None, 400,
+         Error.NOT_REQUIRED_ARGS.value, False, True),                               # первая запись, нет телефона
+        ('any@m.ru', 'TO_UPD', 'region', 'Eee', 'street', 'Ert', 'phone', '999', 400,
+         {'Status': False, 'Errors': {'phone': ['Убедитесь, что это значение содержит не менее 10 символов.']}},
+         False, True),                                                              # некорректный телефон
+        ('any@m.ru', 'TO_UPD', 'region', 'Eee', 'street', 'Ert', 'phone', '8123334455', 400,
+         {'non_field_errors': ['Некорректное название города']}, False, True),      # некорректный город
+        ('any@m.ru', 'TO_UPD', 'region', 'Омск', 'street', 'Ert', 'phone', '8123334455', 400,
+         {'non_field_errors': ['Некорректное название улицы']}, False, True),       # некорректная улица
+        ('any@m.ru', 'TO_UPD', 'region', 'Тула', 'street', 'Ленина', 'phone', '8123334455', 201,
+         None, False, True),                                                        # первая запись, все ок
+        ('any@m.ru', 'TO_UPD', 'region', 'Тула', 'street', 'Ленина', None, None, 201,
+         None, False, False),                                                       # не первая запись, все ок
+    )
+)
+def test_contact_post(client_pytest, email, test_token, arg_1, value_1, arg_2, value_2, arg_3, value_3, exp_res,
+                      exp_error_text, test_max, is_first):
+    """Проверяем создание контакта и адресов клиента, корректность валидации, отображения ошибок в response и
+    загруженных данных в информации о контакте"""
+
+    # создаем пользователя, auth-token для него
+    user = User.objects.create_user(email=email, is_active=True)
+    auth_token = Token.objects.create(user=user)
+    if test_max:
+        contact = baker.make(Contact, user=user)
+        baker.make(Address, _quantity=5, contact=contact)
+    if is_first is False:
+        baker.make(Contact, user=user)
+
+    # определяем токен для headers в запросе
+    user_token = None
+    if test_token == 'TO_UPD':
+        user_token = auth_token.key
+    elif test_token == 'random_token':
+        user_token = test_token
+    elif test_token is None:
+        pass
+
+    # определяем data для запроса и отправляем запрос
+    post_data_1 = {}
+    post_data_2 = {}
+    post_data_3 = {}
+    if arg_1:
+        post_data_1 = {arg_1: value_1}
+    if arg_2:
+        post_data_2 = {arg_2: value_2}
+    if arg_3:
+        post_data_3 = {arg_3: value_3}
+    post_data = {**post_data_1, **post_data_2, **post_data_3}
+
+    # устанавливаем токен в headers и отправляем запрос
+    if user_token:
+        client_pytest.credentials(HTTP_AUTHORIZATION=f'Token {user_token}')
+    res = client_pytest.post(reverse('user_contact'), data=post_data)
+    data = res.json()
+
+    assert res.status_code == exp_res
+    if res.status_code != 201:
+        assert data == exp_error_text
+    else:
+        # При успехе проверяем корректность отображения загруженных данных
+        res = client_pytest.get(reverse('user_contact'))
+        data = res.json()
+
+        if is_first:
+            assert data[0]['phone'] == value_3
+        assert data[0]['addresses'][0]['region'] == value_1
+        assert data[0]['addresses'][0]['street'] == value_2

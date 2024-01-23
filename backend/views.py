@@ -553,7 +553,7 @@ class ContactView(APIView):
 
         # проверка на наличие всех обязательных аргументов
         if not {'region', 'street'}.issubset(request.data):
-            return Response(Error.NOT_REQUIRED_ARGS.value, status=403)
+            return Response(Error.NOT_REQUIRED_ARGS.value, status=400)
         request_data = dict(request.data)
 
         # ставим ограничение на допустимое количество контактов клиента
@@ -582,9 +582,9 @@ class ContactView(APIView):
                 try:
                     new_contact = Contact.objects.create(user=request.user, phone=phone)
                 except IntegrityError as e:
-                    return Response({'Status': False, 'Errors': str(e)})
+                    return Response({'Status': False, 'Errors': str(e)}, status=400)
             else:
-                return Response({'Status': False, 'Errors': serializer.errors})
+                return Response({'Status': False, 'Errors': serializer.errors}, status=400)
 
         # добавляем адреса к существующему/созданному контакту
         request_data.update(contact=request.user.contacts)
@@ -592,15 +592,15 @@ class ContactView(APIView):
         if serializer.is_valid():
             try:
                 Address.objects.create(**request_data)
-                return Response(serializer.data)
+                return Response(serializer.data, status=201)
             except IntegrityError as e:
                 if new_contact:
                     new_contact.delete()
-                return Response({'Status': False, 'Errors': str(e)})
+                return Response({'Status': False, 'Errors': str(e)}, status=400)
         else:
             if new_contact:
                 new_contact.delete()
-            return Response(serializer.errors)
+            return Response(serializer.errors, status=400)
 
     @swagger_auto_schema(request_body=ContactPatchSerializer)
     def patch(self, request, *args, **kwargs):
