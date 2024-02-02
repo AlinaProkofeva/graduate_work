@@ -1,10 +1,12 @@
 from django.contrib import admin
+from django.utils.safestring import mark_safe
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.admin import TokenProxy
 
-from backend.forms import ShopForm, OrderItemInLineFormset, OrderForm, UserForm, ContactForm, AddressForm, RatingForm
+from backend.forms import ShopForm, OrderItemInLineFormset, OrderForm, UserForm, ContactForm, AddressForm, RatingForm, \
+    ProductPhotoInLineFormset
 from backend.models import Order, Category, Product, Parameter, ProductParameter, Contact, Shop, ProductInfo, \
-    OrderItem, User, ConfirmEmailToken, Address, RatingProduct
+    OrderItem, User, ConfirmEmailToken, Address, RatingProduct, ProductInfoPhoto
 
 # убираем автоматически создаваемую таблицу с токенами, ниже сделаем кастомную
 admin.site.unregister(TokenProxy)
@@ -31,12 +33,28 @@ class TokenAdmin(admin.ModelAdmin):
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     """Пользователи"""
-    list_display = ['email', 'type', 'first_name', 'last_name', 'is_active', 'is_superuser']
+    # list_display = ['email', 'type', 'avatar', 'first_name', 'last_name', 'is_active', 'is_superuser']
+    list_display = ['email', 'type', 'get_html_thumbnail', 'first_name', 'last_name', 'is_active', 'is_superuser']
     list_editable = ['is_active', 'is_superuser']
     list_filter = ['is_active', 'type', 'is_superuser']
     search_fields = ['email', 'first_name', 'last_name']
-    exclude = ['password', 'groups', 'is_staff', 'user_permissions', 'is_superuser', 'last_login']
     form = UserForm
+    fields = ['get_html_photo', 'first_name', 'last_name', 'date_joined', 'email', 'company', 'position', 'is_active',
+              'type', 'avatar_thumbnail']
+    readonly_fields = ['get_html_photo', 'date_joined']
+
+    def get_html_thumbnail(self, object):
+        """Отображение в админке миниатюры аватара, а не ссылки"""
+        if object.avatar_thumbnail:
+            return mark_safe(f'<img src="{object.avatar_thumbnail.url}" width=50 height=65')
+
+    def get_html_photo(self, object):
+        """Отображение в админке в профиле пользователя аватарки"""
+        if object.avatar_thumbnail:
+            return mark_safe(f'<img src="{object.avatar_thumbnail.url}"')
+
+    get_html_thumbnail.short_description = 'Аватарка'
+    get_html_photo.short_description = 'Аватар'
 
 
 @admin.register(ConfirmEmailToken)
@@ -139,6 +157,22 @@ class ContactAdmin(admin.ModelAdmin):
     inlines = [AddressInline, ]
 
 
+class PhotoInline(admin.TabularInline):
+    """Инлайн с изображениями товара и определением главной иконки для отображения в списке"""
+    model = ProductInfoPhoto
+    extra = 0
+    readonly_fields = ['image_preview', ]
+    fields = ['image_preview', 'is_main', 'photo']
+    formset = ProductPhotoInLineFormset
+
+    def image_preview(self, obj):
+        """Отображение фото в инлайне вместо url"""
+        if obj.photo:
+            return mark_safe(f'<img src="{obj.photo_small.url}"')
+
+    image_preview.short_description = 'Фото'
+
+
 @admin.register(ProductInfo)
 class ProductInfoAdmin(admin.ModelAdmin):
     """Связь Товар - Магазин, остатки на конкретных складах с магазинным артикулом, названием
@@ -147,7 +181,7 @@ class ProductInfoAdmin(admin.ModelAdmin):
     list_display_links = ['id', 'product']
     search_fields = ['model', 'product__name', 'external_id']
     list_filter = ['shop']
-    inlines = [ProductParameterInLine]
+    inlines = [ProductParameterInLine, PhotoInline]
     fieldsets = (
         ('Информация о товаре', {
             'fields': ('product', 'description', 'model', 'external_id')
@@ -156,3 +190,24 @@ class ProductInfoAdmin(admin.ModelAdmin):
             'fields': ('shop', 'quantity', 'price', 'price_rrc')
         })
     )
+
+
+# @admin.register(ProductInfoPhoto)   # в инлайне информации о товаре в магазине
+# class ProductInfoPhotoAdmin(admin.ModelAdmin):
+#     list_display = ['id', 'get_html_photo_icon', 'is_main', 'product']
+#     list_display_links = ['id', 'product']
+#     fields = ['get_html_photo', 'product', 'is_main', 'photo']
+#     readonly_fields = ['get_html_photo']
+#
+#     def get_html_photo_icon(self, object):
+#         """Отображение иконки в списке админки"""
+#         if object.photo:
+#             return mark_safe(f'<img src="{object.photo_small.url}"')
+#
+#     def get_html_photo(self, object):
+#         """Отображение фото товара крупным планом"""
+#         if object.photo:
+#             return mark_safe(f'<img src="{object.photo_large.url}"')
+#
+#     get_html_photo_icon.short_description = 'Изображение'
+#     get_html_photo.short_description = 'Изображение'

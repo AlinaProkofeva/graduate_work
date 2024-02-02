@@ -75,6 +75,10 @@ class Error(Enum):
         'Status': False,
         'Error': 'Некорректный формат файла'
     }
+    IDS_NOT_EXIST = {
+        'Status': False,
+        'Error': 'Нет изображений товаров с таким/такими id или вы пытаетесь удалить главное изображение'
+    }
     ID_NOT_INT = {
         'Status': False,
         'Error': 'Аргумент "id" должен быть числом'
@@ -87,6 +91,10 @@ class Error(Enum):
         'Status': False,
         'Error': 'Некорректное значение аргумента ids'
     }
+    IS_MAIN_WRONG_TYPE = {
+        'Status': False,
+        'Error': 'Некорректное значение аргумента is_main'
+    }
     ORDER_NOT_EXIST = {
         'Status': False,
         'Error': 'Заказ не существует'
@@ -94,6 +102,14 @@ class Error(Enum):
     PRODUCT_ID_WRONG_TYPE = {
         'Status': False,
         'Error': 'Некорректное значение аргумента product_id'
+    }
+    PRODUCT_INFO_NOT_EXISTS = {
+        'Status': False,
+        'Error': 'Товара с таким id нет в магазине'
+    }
+    PRODUCT_WRONG_TYPE = {
+        'Status': False,
+        'Error': 'Некорректное значение аргумента product'
     }
     RATING_DUPLICATE = {
         'Status': False,
@@ -138,6 +154,8 @@ class ValidateError(Enum):
     DUPLICATE_BASKET = 'Нельзя создать вторую корзину'
     EMAIL_FAILED = 'Не удалось доставить письмо с изменением статуса заказа на электронную почту'
     EMAIL_NOT_UNIQUE = 'Пользователь с таким email уже существует'
+    ICON_EXCEEDING = 'Основная иконка может быть только одна'
+    ICON_IS_EMPTY = 'Выберите основную иконку'
     NAME_REQUIRED = 'Необходимо указать имя и фамилию пользователя'
     ORDER_IS_EMPTY = 'Невозможно сохранить пустой заказ/корзину'
     PHONE_IS_INCORRECT = 'Некорректный номер телефона'

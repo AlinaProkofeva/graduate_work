@@ -48,9 +48,26 @@ manual_parameters_orderpartner_get = [
    Param('delivery_date_after', IN_QUERY, type=TYPE_STRING),
 ]
 
-# загрузка файла
+# загрузка файла partnerupdate
 manual_parameters_partnerupdate = [
    Param(name="file", in_=IN_FORM, type=TYPE_FILE, required=True, description="Файл")
+]
+
+# загрузка файла avatar_thumbnail
+manual_parameters_avatar_thumbnail = [
+    Param(name='avatar_thumbnail', in_=IN_FORM, type=TYPE_FILE, required=False, description='Аватар')
+]
+
+# query_params для просмотра изображений товаров на складе
+manual_parameters_good_images = [
+    Param(name="id", in_=IN_QUERY, type=TYPE_INTEGER),
+    Param(name="external_id", in_=IN_QUERY, type=TYPE_INTEGER),
+    Param(name="product", in_=IN_QUERY, type=TYPE_STRING),
+]
+
+# загрузка файла photo для изображения товара на складе
+manual_parameters_product_photo = [
+    Param(name='photo', in_=IN_FORM, type=TYPE_FILE, required=True, description='Изображение товара')
 ]
 
 # Вспомогательные сериализаторы для тест-драйва swagger
@@ -138,8 +155,19 @@ class ContactDeleteSerializer(serializers.Serializer):
     delete_contact = serializers.CharField(min_length=4, max_length=4)
 
 
-class AccountCreatePatchSerializer(serializers.ModelSerializer):
-    """Регистрация/редактирование данных аккаунта пользователя"""
+class AccountPatchSerializer(serializers.Serializer):
+    """Редактирование данных аккаунта пользователя"""
+    first_name = serializers.CharField(required=False)
+    last_name = serializers.CharField(required=False)
+    email = serializers.EmailField(required=False)
+    password = serializers.CharField(required=False)
+    company = serializers.CharField(required=False)
+    position = serializers.CharField(required=False)
+    type = serializers.CharField(required=False)
+
+
+class AccountCreateSerializer(serializers.ModelSerializer):
+    """Регистрация аккаунта пользователя"""
 
     class Meta:
         model = User
@@ -173,3 +201,22 @@ class CreateReportSerializer(serializers.Serializer):
 
     from_date = serializers.DateField()
     before_date = serializers.DateField()
+
+
+class CreateProductImageSerializer(serializers.Serializer):
+    """Сохранение изображения товара на складе"""
+
+    product = serializers.IntegerField()
+    is_main = serializers.CharField()
+
+
+class PatchProductImageSerializer(serializers.Serializer):
+    """Изменить основное изображение/иконку товара"""
+
+    is_main = serializers.IntegerField()
+
+
+class DeleteProductImageSerializer(serializers.Serializer):
+    """Удалить изображение/изображения товара по id фото"""
+
+    ids = serializers.ListField()

@@ -1,7 +1,10 @@
 import datetime
+import os
 import re
+import smtplib
 from smtplib import SMTPRecipientsRefused
 import oauth2_provider.models
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django_rest_passwordreset.views import ResetPasswordRequestToken, ResetPasswordConfirm
 # from yaml import load as load_yaml, Loader, safe_load
 from distutils.util import strtobool
@@ -21,20 +24,24 @@ from drf_yasg.utils import swagger_auto_schema
 
 import backend.models
 from backend.models import Order, Shop, OrderItem, ProductInfo, Category, Contact, ConfirmEmailToken, Address, \
-    RatingProduct, User
+    RatingProduct, User, ProductInfoPhoto
+from shop_site import settings
 from .filters import ProductsFilter, query_filter_maker
 from .serializers import ShopSerializer, OrderCustomerSerializer, ProductParameterSerializer, CategorySerializer, \
     OrderPartnerSerializer, ContactSerializer, BasketSerializer, OrderItemCreateSerializer, UserSerializer, \
-    UserBuyerSerializer, AddressSerializer, ProductInfoDetailSerializer, OrderDetailSerializer, ReviewSerializer
+    UserBuyerSerializer, AddressSerializer, ProductInfoDetailSerializer, OrderDetailSerializer, ReviewSerializer, \
+    ShopProductPhotoSerializer, ProductPhotoSerializer
 from shop_site.yasg import OrderPostSerializer, BasketDeleteSerializer, BasketPostSerializer, \
     manual_parameters_orderview_get, manual_parameters_orderpartner_get, PartnerOrderPostSerializer, \
     PartnerStatePostSerializer, PartnerUpdatePostSerializer, manual_parameters_partnerupdate, \
     ContactPatchSerializer, ContactDeleteSerializer, ContactPostSerializer, \
-    AccountCreatePatchSerializer, ConfirmAccountSerializer, LoginAccountSerializer, RateProductSerializer, \
-    CreateReportSerializer
+    AccountCreateSerializer, ConfirmAccountSerializer, LoginAccountSerializer, RateProductSerializer, \
+    CreateReportSerializer, manual_parameters_avatar_thumbnail, AccountPatchSerializer, manual_parameters_good_images, \
+    CreateProductImageSerializer, manual_parameters_product_photo, PatchProductImageSerializer, \
+    DeleteProductImageSerializer
 from .signals import new_account_registered, new_order_state, new_order_created
 from .utils.error_text import Error, ValidateError
-from .utils import reg_patterns
+from .utils import reg_patterns, media
 from .utils.get_data_from_yaml import get_data_from_yaml_file, create_categories, get_data_from_all_tasks
 from .tasks import task_load_good_from_yaml
 from .task_backup_report import backup_shop_base, send_report_task
@@ -49,7 +56,10 @@ class RegisterAccount(APIView):
     Класс для регистрации нового пользователя (клиента, менеджера) в неактивном статусе
     """
 
-    @swagger_auto_schema(request_body=AccountCreatePatchSerializer)
+    parser_classes = (MultiPartParser,)
+
+    @swagger_auto_schema(request_body=AccountCreateSerializer,
+                         manual_parameters=manual_parameters_avatar_thumbnail)
     def post(self, request, *args, **kwargs):
         """
         Зарегистрировать нового пользователя (клиента, менеджера) в неактивном статусе.
@@ -76,6 +86,9 @@ class RegisterAccount(APIView):
             "position": "РГО",
             "type": "shop"
         }
+
+        **Для загрузки аватара** необходимо передать аргумент 'avatar_thumbnail' с файлом. Если он не передан,
+        пользователю установится дефолтное изображение.
         """
 
         # проверка, что в data указаны все минимально необходимые параметры
@@ -96,8 +109,11 @@ class RegisterAccount(APIView):
             user.save()
 
             # отправляем письмо на email с токеном для дальнейшей активации
-            new_account_registered.send(sender=self.__class__, user_id=user.id)
-            return Response(serializer.data, status=201)
+            try:
+                new_account_registered.send(sender=self.__class__, user_id=user.id)
+                return Response(serializer.data, status=201)
+            except smtplib.SMTPRecipientsRefused:
+                return Response(Error.EMAIL_WRONG.value, status=201)
 
         else:
             return Response(serializer.errors, status=400)
@@ -252,6 +268,8 @@ class AccountDetails(APIView):
     Класс для работы с данными пользователя
     """
 
+    parser_classes = (MultiPartParser, )
+
     # noinspection PyMethodMayBeStatic
     def get(self, request, *args, **kwargs):
         """
@@ -271,7 +289,8 @@ class AccountDetails(APIView):
             serializer = UserBuyerSerializer(request.user)
         return Response(serializer.data)
 
-    @swagger_auto_schema(request_body=AccountCreatePatchSerializer)
+    @swagger_auto_schema(request_body=AccountPatchSerializer,
+                         manual_parameters=manual_parameters_avatar_thumbnail)
     def patch(self, request, *args, **kwargs):
         """
         Редактировать данные аккаунта пользователя.
@@ -288,6 +307,8 @@ class AccountDetails(APIView):
         "type": "shop"
         }
 
+        **Для смены аватара** необходимо передать аргумент 'avatar_thumbnail' с файлом загрузки.
+
         _при смене email необходимо повторное подтверждение аккаунта с новой почты_
         """
 
@@ -296,7 +317,8 @@ class AccountDetails(APIView):
             return Response(Error.USER_NOT_AUTHENTICATED.value, status=403)
 
         # Проверяем наличие необходимых аргументов
-        expected_args = {'first_name', 'last_name', 'email', 'company', 'position', 'type', 'password'}
+        expected_args = {'first_name', 'last_name', 'email', 'company', 'position', 'type', 'password',
+                         'avatar_thumbnail'}
         not_expected_args = expected_args.isdisjoint(request.data.keys())
         if not_expected_args:  # нет нужных элементов
             return Response(Error.NOT_REQUIRED_ARGS.value, status=400)
@@ -321,6 +343,13 @@ class AccountDetails(APIView):
 
         serializer = UserSerializer(instance=request.user, data=request.data, partial=True)
         if serializer.is_valid():
+
+            # если смена аватара, удаляем из базы старое фото, кроме дефолтного
+            if request.data.get('avatar_thumbnail'):
+                filename = str(request.user.avatar_thumbnail)
+                if filename != 'ava_thumbnails/default.jpg':
+                    filepath = os.path.join(settings.MEDIA_ROOT, filename.split('/')[0], filename.split('/')[1])
+                    os.remove(filepath)
             serializer.save()
 
             if new_password:
@@ -1608,3 +1637,249 @@ class PartnerReport(APIView):
         send_report_task.delay(signal_kwargs)
 
         return Response({'Status': True, 'Отчет': 'Отправлен'})
+
+
+# noinspection PyUnusedLocal
+# noinspection PyUnresolvedReferences
+class PartnerProductInfoPhotoView(APIView):
+    """
+    Класс для управления изображениями к товарам на остатках магазинов.
+    """
+    parser_classes = (MultiPartParser,)
+
+    @swagger_auto_schema(manual_parameters=manual_parameters_good_images)
+    def get(self, request, *args, **kwargs):
+        """
+        Посмотреть товары магазина со всеми изображениями.
+
+        Действия доступны только менеджеру магазина с остатками на складе магазина.
+
+        Доступна параметризация запроса:
+
+        'id' - фильтр по id товара
+        'external_id' - фильтр по external_id товара
+        'product' - поиск по частичному совпадению названия
+        """
+
+        # Проверка авторизации пользователя
+        if not request.user.is_authenticated:
+            return Response(Error.USER_NOT_AUTHENTICATED.value, status=403)
+
+        # Проверяем, что юзер == менеджер магазина
+        if request.user.type != 'shop':
+            return Response(Error.USER_TYPE_NOT_SHOP.value, status=403)
+        try:
+            request.user.shop
+        except User.shop.RelatedObjectDoesNotExist:
+            return Response(Error.USER_HAS_NO_SHOP.value, status=400)
+
+        # Настраиваем фильтрацию и поиск
+        query = Q(shop=request.user.shop)
+        filter_kwargs = {}
+        expected_query_params = [
+            ('id', 'id'),                             # фильтр по id товара
+            ('external_id', 'external_id'),           # фильтр по external_id товара
+            ('product', 'product__name__icontains'),  # поиск по частичному совпадению названия
+        ]
+        for item in expected_query_params:
+            arguments = [request]
+            for i in item:
+                arguments.append(i)
+            filter_kwargs.update(query_filter_maker(*arguments))
+
+        # Товары принадлежащие магазину менеджера
+        queryset = ProductInfo.objects.filter(query, **filter_kwargs)
+        serializer = ShopProductPhotoSerializer(queryset, many=True)
+
+        return Response(serializer.data)
+
+    @swagger_auto_schema(request_body=CreateProductImageSerializer, manual_parameters=manual_parameters_product_photo)
+    def post(self, request, *args, **kwargs):
+        """
+        Загрузить изображение товара в магазине.
+
+        Действия доступны только менеджеру магазина с остатками на складе магазина.
+
+        В data необходимо передать следующие данные:
+
+        product - id ProductInfo товара на складе
+        is_main - True/False, признак главного изображения для отображения в основной иконке
+        photo - файл с изображением товара
+
+        При загрузке первого изображения товара is_main автоматически установится как True
+
+        При загрузке нового изображения с is_main=True, оно будет установлено как главное, а предыдущему главному
+        изображению будет установлено is_main=False
+        """
+
+        # Проверка авторизации пользователя
+        if not request.user.is_authenticated:
+            return Response(Error.USER_NOT_AUTHENTICATED.value, status=403)
+
+        # Проверяем, что юзер == менеджер магазина
+        if request.user.type != 'shop':
+            return Response(Error.USER_TYPE_NOT_SHOP.value, status=403)
+        try:
+            request.user.shop
+        except User.shop.RelatedObjectDoesNotExist:
+            return Response(Error.USER_HAS_NO_SHOP.value, status=400)
+
+        # проверяем, что в data переданы все необходимые аргументы
+        if not {'product', 'is_main', 'photo'}.issubset(request.data):
+            return Response(Error.NOT_REQUIRED_ARGS.value, status=400)
+
+        # проверяем, что передан файл с изображением, валидируем product, is_main
+        photo = request.data.get('photo')
+        if type(photo) != InMemoryUploadedFile:
+            return Response(Error.FILE_INCORRECT.value, status=400)
+        if photo.name.split('.')[-1] not in media.image_extensions:
+            return Response(Error.FILE_INCORRECT.value, status=400)
+
+        product = request.data.get('product')  # приводим product к int
+        if type(product) != int:
+            try:
+                product = int(product)
+            except ValueError:
+                return Response(Error.PRODUCT_WRONG_TYPE.value, status=400)
+
+        is_main = request.data.get('is_main')  # валидируем is_main
+        if is_main not in ('True', 'False'):
+            return Response(Error.IS_MAIN_WRONG_TYPE.value, status=400)
+
+        # проверяем, что товар с указанным ид есть в магазине
+        product_info = ProductInfo.objects.filter(id=product, shop=request.user.shop)
+        if not product_info:
+            return Response(Error.PRODUCT_INFO_NOT_EXISTS.value, status=400)
+
+        # создаем запись об изображении к товару в таблице ProductInfoPhoto
+        # если это первое изображение, оно принудительно устанавливается как главное
+        if ProductInfoPhoto.objects.filter(product=product_info.first()).count() == 0:
+            is_main = True
+        ProductInfoPhoto.objects.create(product=product_info.first(), is_main=is_main, photo=photo)
+        serializer = ShopProductPhotoSerializer(product_info.first())
+
+        return Response(serializer.data, status=201)
+
+    @swagger_auto_schema(request_body=PatchProductImageSerializer)
+    def patch(self, request, *args, **kwargs):
+        """
+        Изменить основное изображение и иконку товара.
+
+        Действия доступны только менеджеру магазина с остатками на складе магазина.
+
+        В data необходимо передать id изображения, которое хотим установить главным:
+
+        {
+            "is_main": 1
+        }
+        У товара на складе, к которому относится это изображение, оно будет установлено как основная иконка вместо
+        предыдущей.
+        """
+
+        # Проверка авторизации пользователя
+        if not request.user.is_authenticated:
+            return Response(Error.USER_NOT_AUTHENTICATED.value, status=403)
+
+        # Проверяем, что юзер == менеджер магазина
+        if request.user.type != 'shop':
+            return Response(Error.USER_TYPE_NOT_SHOP.value, status=403)
+        try:
+            request.user.shop
+        except User.shop.RelatedObjectDoesNotExist:
+            return Response(Error.USER_HAS_NO_SHOP.value, status=400)
+
+        # проверяем, что в data переданы все необходимые аргументы
+        if not {'is_main'}.issubset(request.data):
+            return Response(Error.NOT_REQUIRED_ARGS.value, status=400)
+
+        # валидируем is_main
+        product = request.data.get('is_main')
+        if type(product) != int:
+            try:
+                product = int(product)
+            except ValueError:
+                return Response(Error.IS_MAIN_WRONG_TYPE.value, status=400)
+
+        # проверяем, что есть товар с таким id изображения
+        new_main = ProductInfoPhoto.objects.filter(product__shop__user=request.user, id=product).first()
+        if not new_main:
+            return Response(Error.PRODUCT_INFO_NOT_EXISTS.value, status=400)
+
+        # устанавливаем флаг is_main=True новому изображению и сбрасываем старому
+        all_images = ProductInfoPhoto.objects.filter(product__shop__user=request.user, product=new_main.product)
+        all_images.update(is_main=False)
+        all_images.filter(id=product).update(is_main=True)
+
+        serializer = ProductPhotoSerializer(all_images, many=True)
+        return Response(serializer.data)
+
+    @swagger_auto_schema(request_body=DeleteProductImageSerializer)
+    def delete(self, request, *args, **kwargs):
+        """
+        Удалить изображение товара из базы.
+
+        Действия доступны только менеджеру магазина с остатками на складе магазина.
+
+        В data необходимо передать список или строку с перечнем id удаляемых изображений.
+
+        {
+            "ids": "111, 55, 42"
+        }
+
+        Изображения с флагом is_main=True НЕ могут быть удалены.
+        """
+
+        # Проверка авторизации пользователя
+        if not request.user.is_authenticated:
+            return Response(Error.USER_NOT_AUTHENTICATED.value, status=403)
+
+        # Проверяем, что юзер == менеджер магазина
+        if request.user.type != 'shop':
+            return Response(Error.USER_TYPE_NOT_SHOP.value, status=403)
+        try:
+            request.user.shop
+        except User.shop.RelatedObjectDoesNotExist:
+            return Response(Error.USER_HAS_NO_SHOP.value, status=400)
+
+        # проверяем, что в data переданы все необходимые аргументы
+        if not {'ids'}.issubset(request.data):
+            return Response(Error.NOT_REQUIRED_ARGS.value, status=400)
+
+        # проверка, что все значения ids являются int
+        ids = request.data.get('ids')
+        ids_list = []
+        if type(ids) == str:
+            ids_list = [i.strip() for i in ids.split(',')]
+            if False in (list(i.isdigit() for i in ids_list)):
+                return Response(Error.IDS_WRONG_TYPE.value, status=400)
+        elif type(ids) == list:
+            try:
+                ids_list = [int(i) for i in ids]
+            except ValueError:
+                return Response(Error.IDS_WRONG_TYPE.value, status=400)
+        elif type(ids) == int:
+            ids_list.append(ids)
+
+        # делаем фильтр для поиска удаляемых изображений товара
+        query = Q()
+        for item in ids_list:
+            # нельзя удалить изображение, отмеченное как главное
+            query = query | Q(id=int(item), product__shop__user=request.user, is_main=False)
+        be_deleted = ProductInfoPhoto.objects.filter(query)
+
+        # удаляем из базы и медиа изображения
+        for i in be_deleted:
+            filepath = str(i.photo.url)
+            filepath = filepath.split('/')
+            filepath_image = os.path.join(settings.MEDIA_ROOT, filepath[2], filepath[3], filepath[4])
+            os.remove(filepath_image)
+        deleted = be_deleted.delete()
+
+        errors = {}  # сборщик ошибок
+        if not deleted[0]:
+            return Response(Error.IDS_NOT_EXIST.value, status=400)
+        if len(ids_list) > deleted[0]:
+            errors['Не удалось удалить объектов'] = len(ids_list) - deleted[0]
+            errors['Error'] = Error.IDS_NOT_EXIST.value['Error']
+
+        return Response({'Status': True, 'Удалено объектов': deleted[0], **errors})

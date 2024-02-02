@@ -6,7 +6,11 @@ from django.utils.translation import gettext_lazy as _
 from django.core.validators import MinValueValidator, MinLengthValidator, URLValidator
 from django_rest_passwordreset.tokens import get_token_generator
 from datetime import date, timedelta
+from imagekit.models import ProcessedImageField, ImageSpecField
+from imagekit.processors import ResizeToFill, Adjust
+from pilkit.processors import ResizeToFit
 
+from backend.utils.media import upload_icon_location, upload_ava_thumbnail_location
 
 # Варианты статуса заказа клиента
 ORDER_STATE_CHOICES = (
@@ -118,6 +122,13 @@ class User(AbstractUser):
     type = models.CharField(choices=USER_TYPE_CHOICES,
                             max_length=5,
                             default='buyer')
+    avatar_thumbnail = ProcessedImageField(blank=True,
+                                           default='ava_thumbnails/default.jpg',
+                                           upload_to=upload_ava_thumbnail_location,
+                                           format='JPEG',
+                                           processors=[ResizeToFill(200, 270)],
+                                           options={'quality': 80},
+                                           verbose_name='Аватар')
     # contacts - контакты пользователя
     # shop - связанный магазин
     # confirm_email_token - токен активации пользователя
@@ -265,6 +276,7 @@ class ProductInfo(models.Model):
     price_rrc = models.PositiveIntegerField(verbose_name='Рекомендуемая розничная цена')
     # product_parameters - m2m связь с характеристиками
     # ratings - m2m связь с отзывами
+    # photos - связь с фотографиями товара
 
     class Meta:
         verbose_name = 'Информация о продукте'
@@ -478,3 +490,51 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f'{self.product_info}'
+
+
+# noinspection PyUnresolvedReferences
+class ProductInfoPhoto(models.Model):
+    """Таблица для связи товаров на остатках с изображениями товара. Атрибут is_main - основная иконка для
+    отображения в общем каталоге товаров"""
+
+    product = models.ForeignKey(ProductInfo,
+                                on_delete=models.CASCADE,
+                                related_name='photos',
+                                verbose_name='Товар')
+    photo = ProcessedImageField(blank=True,
+                                upload_to=upload_icon_location,
+                                format='JPEG',
+                                processors=[ResizeToFill(600, 800)],
+                                options={'quality': 80},
+                                verbose_name='Изображение')
+    photo_small = ImageSpecField([Adjust(contrast=1.2, sharpness=1.1), ResizeToFit(50, 50)],
+                                 source='photo',
+                                 format='JPEG',
+                                 options={'quality': 90})
+    photo_large = ImageSpecField([Adjust(contrast=1.2, sharpness=1.1), ResizeToFit(900, 1200)],
+                                 source='photo',
+                                 format='JPEG',
+                                 options={'quality': 90})
+    is_main = models.BooleanField(default=False,
+                                  verbose_name='Главная иконка')
+
+    def save(self, *args, **kwargs):
+        """
+        Только у одного изображения товара может быть маркировка is_main. Если создается новое фото с такой
+        маркировкой, предыдущему главному изображению присваивается значение is_main = False.
+        """
+        if self.is_main == 'True':
+            try:
+                item = ProductInfoPhoto.objects.filter(is_main=True, product=self.product)
+                if self != item:
+                    item.update(is_main=False)
+            except ProductInfoPhoto.DoesNotExist:
+                pass
+        return super(ProductInfoPhoto, self).save(*args, **kwargs)
+
+    class Meta:
+        verbose_name = 'Изображение товара'
+        verbose_name_plural = 'Изображения товаров'
+
+    def __str__(self):
+        return f'Изображение {self.product.product.name}'

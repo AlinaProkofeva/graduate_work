@@ -1392,6 +1392,70 @@
 			"response": []
 		},
 		{
+			"name": "партнер -  принять накладную, переоценку, описание товара",
+			"request": {
+				"auth": {
+					"type": "bearer"
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token e5d5cf9ac7f2b87cde00a2ab1ae88807e6f0b28d",
+						"description": "покупатель",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Token 15ad37f00776745694099d74264f513932342c04",
+						"description": "нов менеджер без магазина",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Token eec97287bd0dc37654bee8e6f1c8745bf43d55c7",
+						"description": "менеджер  магазина",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Token vnffhr4iujgo4u9ugo9g",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/D:/Netology/Graduate_work_celery/shop_patch.yaml"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/partner/update/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"partner",
+						"update",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "партнер - бэкап базы магазина",
 			"request": {
 				"auth": {
@@ -1475,37 +1539,30 @@
 			"response": []
 		},
 		{
-			"name": "партнер -  принять накладную, переоценку, описание товара",
+			"name": "партнер - посмотреть изображения товаров",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "партнер - добавить изображение товара",
 			"request": {
 				"auth": {
 					"type": "bearer"
 				},
-				"method": "PATCH",
+				"method": "POST",
 				"header": [
 					{
 						"key": "Authorization",
-						"value": "Token e5d5cf9ac7f2b87cde00a2ab1ae88807e6f0b28d",
-						"description": "покупатель",
-						"type": "text",
-						"disabled": true
-					},
-					{
-						"key": "Authorization",
-						"value": "Token 15ad37f00776745694099d74264f513932342c04",
-						"description": "нов менеджер без магазина",
+						"value": "Token \tvnffhr4iujgo4u9ugo9gwwwwww",
 						"type": "text",
 						"disabled": true
 					},
 					{
 						"key": "Authorization",
 						"value": "Token eec97287bd0dc37654bee8e6f1c8745bf43d55c7",
-						"description": "менеджер  магазина",
-						"type": "text",
-						"disabled": true
-					},
-					{
-						"key": "Authorization",
-						"value": "Token vnffhr4iujgo4u9ugo9g",
 						"type": "text"
 					}
 				],
@@ -1513,14 +1570,24 @@
 					"mode": "formdata",
 					"formdata": [
 						{
-							"key": "file",
+							"key": "product",
+							"value": "60",
+							"type": "text"
+						},
+						{
+							"key": "is_main",
+							"value": "True",
+							"type": "text"
+						},
+						{
+							"key": "photo",
 							"type": "file",
-							"src": "/D:/Netology/Graduate_work_celery/shop_patch.yaml"
+							"src": "/C:/Users/Alynx/Desktop/samsung-galaxy-a41-smartphone.jpg"
 						}
 					]
 				},
 				"url": {
-					"raw": "http://127.0.0.1:8000/partner/update/",
+					"raw": "http://127.0.0.1:8000/partner/images/",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -1531,7 +1598,93 @@
 					"port": "8000",
 					"path": [
 						"partner",
-						"update",
+						"images",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "партнер - назначить изображение главным",
+			"request": {
+				"auth": {
+					"type": "bearer"
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token eec97287bd0dc37654bee8e6f1c8745bf43d55c7",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "is_main",
+							"value": "40",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/partner/images/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"partner",
+						"images",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "партнер - удалить изображение",
+			"request": {
+				"auth": {
+					"type": "bearer"
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Token eec97287bd0dc37654bee8e6f1c8745bf43d55c7",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "ids",
+							"value": "112, 42, 50, 51",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/partner/images/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"partner",
+						"images",
 						""
 					]
 				}
@@ -1656,7 +1809,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://127.0.0.1:8000/products/51/",
+					"raw": "http://127.0.0.1:8000/products/60/",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -1667,7 +1820,7 @@
 					"port": "8000",
 					"path": [
 						"products",
-						"51",
+						"60",
 						""
 					]
 				}

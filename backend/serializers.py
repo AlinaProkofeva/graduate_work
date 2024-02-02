@@ -3,9 +3,10 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from backend.models import Order, Product, ProductParameter, Shop, ProductInfo, OrderItem, Category, Contact, User, \
-    Address, RatingProduct
+    Address, RatingProduct, ProductInfoPhoto
 from backend.utils import reg_patterns
 from .utils.error_text import ValidateError as Error
+from .utils import media
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -63,7 +64,7 @@ class UserBuyerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'contacts']
+        fields = ['id', 'first_name', 'last_name', 'email', 'avatar_thumbnail', 'contacts']
         read_only_fields = ['id']
 
 
@@ -75,7 +76,8 @@ class UserSerializer(UserBuyerSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'company', 'position', 'type', 'contacts']
+        fields = ['id', 'first_name', 'last_name', 'email', 'avatar_thumbnail', 'company', 'position', 'type',
+                  'contacts']
         read_only_fields = ['id']
 
 
@@ -140,6 +142,14 @@ class ProductParameterSerializer(serializers.ModelSerializer):
         else:
             result['total_rating'] = ''
         result['shop'] = instance.shop.name
+
+        # добавляем в вывод иконку изображения
+        if instance.photos.filter(is_main=True).exists():
+            icon = ProductInfoPhoto.objects.filter(product=instance).first()
+            result['photo'] = icon.photo_small.url
+        else:
+            result['photo'] = media.default_photo_icon  # заглушка для вывода, если не подгружена иконка
+
         return result
 
 
@@ -174,6 +184,28 @@ class ProductInfoDetailSerializer(serializers.ModelSerializer):
             result['total_rating'] = rating
         else:
             result['total_rating'] = ''
+
+        # основное изображение в высоком качестве для описания товара
+        if instance.photos.all().exists():
+            image = instance.photos.filter(is_main=True).first().photo_large.url
+            result['main_image'] = image
+        else:
+            result['main_image'] = media.default_photo_large
+
+        # все изображения отображаются ниже иконками, при клике отображаются в высоком качестве во всплывающем окне
+        if instance.photos.all().exists():
+            images = [i.photo_small.url for i in instance.photos.all()]
+        else:
+            images = []
+        result['icons'] = images
+
+        # все изображения в высоком разрешении для вывода на страницу при клике на иконку
+        if instance.photos.all().exists():
+            images = [i.photo_large.url for i in instance.photos.all()]
+        else:
+            images = []
+        result['images_large'] = images
+
         return result
 
 
@@ -298,4 +330,27 @@ class OrderPartnerSerializer(OrderCustomerSerializer):
     def to_representation(self, instance):
         result = super().to_representation(instance)
         result['contact'] = AddressSerializer(instance.contact).data
+        return result
+
+
+class ProductPhotoSerializer(serializers.ModelSerializer):
+    """Вывод информации об изображении товара"""
+
+    class Meta:
+        model = ProductInfoPhoto
+        fields = ['id', 'photo', 'is_main']
+
+class ShopProductPhotoSerializer(serializers.ModelSerializer):
+    """Товар + все его изображения"""
+
+    photos = ProductPhotoSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ProductInfo
+        fields = ['id', 'external_id', 'product', 'shop', 'photos']
+
+    def to_representation(self, instance):
+        result = super().to_representation(instance)
+        result['shop'] = instance.shop.name
+        result['product'] = instance.product.name
         return result

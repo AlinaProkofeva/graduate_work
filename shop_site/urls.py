@@ -24,7 +24,7 @@ from django.urls import re_path as url
 from backend.views import CategoryView, ShopView, ProductInfoView, PartnerState, PartnerOrders, ContactView, \
     OrderView, BasketView, PartnerUpdate, RegisterAccount, ConfirmAccount, AccountDetails, LoginAccount, \
     LogoutAccount, MyResetPasswordRequestToken, MyResetPasswordConfirm, ProductInfoDetailView, \
-    OrderDetailView, RateProduct, PartnerBackup, PartnerReport
+    OrderDetailView, RateProduct, PartnerBackup, PartnerReport, PartnerProductInfoPhotoView
 from .yasg import urlpatterns as doc_urls
 
 
@@ -56,6 +56,7 @@ urlpatterns = [
     path('partner/update/', PartnerUpdate.as_view(), name='partner_update'),
     path('partner/backup/', PartnerBackup.as_view(), name='partner_backup'),
     path('partner/report/', PartnerReport.as_view(), name='partner_report'),
+    path('partner/images/', PartnerProductInfoPhotoView.as_view(), name='product_images'),
 ]
 
 urlpatterns += doc_urls

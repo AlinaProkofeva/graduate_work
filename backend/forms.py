@@ -1,8 +1,11 @@
+import os
+
 from django.forms import ModelForm, BaseInlineFormSet, TextInput
 from django.core.exceptions import ValidationError
 
-from backend.models import User, Order
+from backend.models import User, Order, ProductInfoPhoto
 from backend.utils.error_text import ValidateError as Error
+from shop_site import settings
 
 
 # noinspection PyUnresolvedReferences
@@ -130,14 +133,22 @@ class UserForm(ModelForm):
     """
     Переопределяем метод clean при создании/редактировании пользователя.
 
-    Добавляем проверку уникальности email, указания имени и фамилии.
+    Добавляем проверку уникальности email, указания имени и фамилии, запрет дублей аватара.
     """
 
     def clean(self):
         """
-        Проверка уникальности email, указания имени и фамилии
+        Проверка уникальности email, указания имени и фамилии, запрет дублей аватара.
         """
         user_with_the_specified_email = User.objects.filter(email=self.cleaned_data['email'])
+
+        # контроль удаления старого аватара при замене, кроме дефолта
+        avatar_new = str(self.cleaned_data.get('avatar_thumbnail'))
+        current_avatar = str(user_with_the_specified_email.first().avatar_thumbnail)
+        if current_avatar != avatar_new:
+            if current_avatar != 'ava_thumbnails/default.jpg':
+                filepath = os.path.join(settings.MEDIA_ROOT, current_avatar.split('/')[0], current_avatar.split('/')[1])
+                os.remove(filepath)  # если смена аватара, удаляем из базы старое фото, кроме дефолтного
 
         # при создании нового пользователя проверяем уникальность email
         if self.instance.id is None:
@@ -206,3 +217,33 @@ class RatingForm(ModelForm):
         if not is_buyer:
             raise ValidationError(Error.USER_NOT_BUYER.value)
         return self.cleaned_data
+
+
+class ProductPhotoInLineFormset(BaseInlineFormSet):
+    """Настройка строго 1 основной иконки товара при наличии изображений, удаления изображения из медиа при удалении
+    строки"""
+    def clean(self):
+        """Настройка строго 1 основной иконки товара при наличии изображений, удаления изображения из медиа при
+        удалении строки"""
+
+        if int(self.data['photos-TOTAL_FORMS']) > 0 :
+            counter = 0
+            for form in self.forms:
+                one_row = form.cleaned_data
+                if one_row['is_main']:
+                    counter += 1
+
+            if not counter:
+                raise ValidationError(Error.ICON_IS_EMPTY.value)
+            elif counter > 1:
+                raise ValidationError(Error.ICON_EXCEEDING.value)
+
+        # удаляем из базы старое фото при отметке удаления строки в админке
+        for i in self.data:
+            if 'photos' and 'DELETE' in i:  # 'photos-1-DELETE': ['on'], 'photos-1-id': ['67']
+                for_delete = ProductInfoPhoto.objects.get(id=self.data[f'photos-{i.split("-")[1]}-id']).photo.url
+                for_delete = for_delete.split('/')
+                filepath = os.path.join(settings.MEDIA_ROOT, for_delete[2], for_delete[3], for_delete[4])
+                os.remove(filepath)
+
+        return super().clean()
