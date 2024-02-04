@@ -11,7 +11,7 @@ from django_rest_passwordreset.views import ResetPasswordRequestToken, ResetPass
 from distutils.util import strtobool
 from django.contrib.auth.password_validation import validate_password
 from django.db import IntegrityError
-from django.db.models import Sum, F, Q
+from django.db.models import Sum, F, Q, Prefetch
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
@@ -424,9 +424,11 @@ class ProductInfoView(ListAPIView):
     'ordering' сортировка по цене, названию продуктов
     (price, -price, product, -product)
     """
-    queryset = ProductInfo.objects.filter(shop__state=True).\
-        select_related('shop', 'product__category').\
-        prefetch_related('product_parameters__parameter')
+    # queryset = ProductInfo.objects.filter(shop__state=True).\
+    #     select_related('shop', 'product__category').\
+    #     prefetch_related('product_parameters__parameter')
+    queryset = ProductInfo.objects.filter(shop__state=True).select_related('shop', 'product__category').\
+        prefetch_related(Prefetch('ratings', queryset=RatingProduct.objects.select_related('user')), 'photos')
     serializer_class = ProductParameterSerializer
 
     # фильтрация + сортировка
@@ -444,7 +446,7 @@ class ProductInfoDetailView(RetrieveAPIView):
     Детализация с расчетом рейтинга и отзывами.
     """
     queryset = ProductInfo.objects.all().select_related('product', 'shop').\
-        prefetch_related('product_parameters__parameter', 'ratings__user')
+        prefetch_related('product_parameters__parameter', 'ratings__user', 'photos')
     serializer_class = ProductInfoDetailSerializer
 
 
