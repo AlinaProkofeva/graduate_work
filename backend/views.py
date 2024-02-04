@@ -1893,4 +1893,6 @@ class PartnerProductInfoPhotoView(APIView):
 
 @api_view(['GET'])
 def main_redirect(request):
+    """Заглушка с редиректом для главной страницы"""
+
     return redirect('products')
