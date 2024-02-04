@@ -1,8 +1,8 @@
 #shop: Евросеть
 shop: Связной
 categories:
-#  - id: 1
-#    name: Смартфоны
+  - id: 1
+    name: Смартфоны
   - id: 2
     name: Аксессуары
   - id: 5

@@ -13,6 +13,7 @@ import os.path
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
+import sentry_sdk
 
 
 load_dotenv()
@@ -36,6 +37,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'jet',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -254,3 +256,73 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_ENABLED=True
+
+# настройки sentry
+sentry_sdk.init(
+    dsn=os.getenv('SENTRY_DSN'),
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+)
+
+# настройки django-jet-reboot
+JET_SIDE_MENU_COMPACT = True
+JET_DEFAULT_THEME = 'light-gray'
+JET_THEMES = [
+    {
+        'theme': 'default', # название папки с темой
+        'color': '#47bac1', # цвет кнопки выбора темы в пользовательском меню
+        'title': 'Default' # название темы
+    },
+    {
+        'theme': 'green',
+        'color': '#44b78b',
+        'title': 'Green'
+    },
+    {
+        'theme': 'light-green',
+        'color': '#2faa60',
+        'title': 'Light Green'
+    },
+    {
+        'theme': 'light-violet',
+        'color': '#a464c4',
+        'title': 'Light Violet'
+    },
+    {
+        'theme': 'light-blue',
+        'color': '#5EADDE',
+        'title': 'Light Blue'
+    },
+    {
+        'theme': 'light-gray',
+        'color': '#222',
+        'title': 'Light Gray'
+    }
+]
+JET_SIDE_MENU_ITEMS = [  # Список приложений или пользовательских элементов dict
+    {'label': 'Пользователи', 'items': [
+        {'name': 'User', 'label': 'Данные пользователей', 'url': '/admin/backend/user/'},
+        {'name': 'Contact', 'label': 'Контакты пользователей', 'url': '/admin/backend/contact/'},
+    ]},
+    {'label': 'Токены', 'items': [
+        {'name': 'Token', 'label': 'Токены аутентификации', 'url': '/admin/authtoken/token/'},
+        {'name': 'ConfirmEmailToken', 'label': 'Токены подтверждения email', 'url': '/admin/backend/confirmemailtoken/'},
+        {'label': 'Токены сброса пароля', 'url': '/admin/django_rest_passwordreset/resetpasswordtoken/'},
+    ]},
+    {'label': 'Магазин', 'items': [
+        {'name': 'ProductInfo', 'label': 'Все товары с описанием', 'url': '/admin/backend/productinfo/'},
+        {'name': 'Category', 'label': 'Категории', 'url': '/admin/backend/category/'},
+        {'name': 'Product', 'label': 'Продукция', 'url': '/admin/backend/product/'},
+        {'name': 'Parameter', 'label': 'Параметры товаров', 'url': '/admin/backend/parameter/'},
+        {'name': 'Shop', 'label': 'Все магазины', 'url': '/admin/backend/shop/'},
+    ]},
+    {'label': 'Заказы', 'items': [
+        {'name': 'Order', 'label': 'Заказы клиентов', 'url': '/admin/backend/order/'},
+        {'name': 'RatingProduct', 'label': 'Оценки и отзывы', 'url': '/admin/backend/ratingproduct/'},
+    ]}
+]

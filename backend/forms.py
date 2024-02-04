@@ -219,6 +219,7 @@ class RatingForm(ModelForm):
         return self.cleaned_data
 
 
+# noinspection PyUnresolvedReferences
 class ProductPhotoInLineFormset(BaseInlineFormSet):
     """Настройка строго 1 основной иконки товара при наличии изображений, удаления изображения из медиа при удалении
     строки"""
@@ -226,11 +227,11 @@ class ProductPhotoInLineFormset(BaseInlineFormSet):
         """Настройка строго 1 основной иконки товара при наличии изображений, удаления изображения из медиа при
         удалении строки"""
 
-        if int(self.data['photos-TOTAL_FORMS']) > 0 :
+        if int(self.data['photos-TOTAL_FORMS']) > 0:
             counter = 0
             for form in self.forms:
                 one_row = form.cleaned_data
-                if one_row['is_main']:
+                if one_row.get('is_main'):
                     counter += 1
 
             if not counter:

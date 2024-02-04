@@ -122,6 +122,7 @@ class InnerProductParameterSerializer(serializers.ModelSerializer):
         fields = ['parameter', 'value']
 
 
+# noinspection PyUnresolvedReferences
 class ProductParameterSerializer(serializers.ModelSerializer):
     """Информация о товаре с характеристиками на складах"""
 
@@ -339,6 +340,7 @@ class ProductPhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductInfoPhoto
         fields = ['id', 'photo', 'is_main']
+
 
 class ShopProductPhotoSerializer(serializers.ModelSerializer):
     """Товар + все его изображения"""

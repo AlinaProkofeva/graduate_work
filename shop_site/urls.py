@@ -21,17 +21,22 @@ from django.urls import path, include
 # noinspection PyUnresolvedReferences
 from django.urls import re_path as url
 
+from backend.utils.sentry import sentry_test_trigger_error
 from backend.views import CategoryView, ShopView, ProductInfoView, PartnerState, PartnerOrders, ContactView, \
     OrderView, BasketView, PartnerUpdate, RegisterAccount, ConfirmAccount, AccountDetails, LoginAccount, \
     LogoutAccount, MyResetPasswordRequestToken, MyResetPasswordConfirm, ProductInfoDetailView, \
-    OrderDetailView, RateProduct, PartnerBackup, PartnerReport, PartnerProductInfoPhotoView
+    OrderDetailView, RateProduct, PartnerBackup, PartnerReport, PartnerProductInfoPhotoView, main_redirect
 from .yasg import urlpatterns as doc_urls
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('sentry/test-debug/', sentry_test_trigger_error),  # for test sentry
     path('__debug__/', include(debug_toolbar.urls)),
 
+    path('jet/', include('jet.urls', 'jet')),  # Django JET URLS
+    path('admin/', admin.site.urls),
+
+    path('', main_redirect),  # заглушка
     path('categories/', CategoryView.as_view(), name='categories'),
     path('shops/', ShopView.as_view(), name='shops'),
     path('products/', ProductInfoView.as_view(), name='products'),

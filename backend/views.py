@@ -5,6 +5,7 @@ import smtplib
 from smtplib import SMTPRecipientsRefused
 import oauth2_provider.models
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.shortcuts import redirect
 from django_rest_passwordreset.views import ResetPasswordRequestToken, ResetPasswordConfirm
 # from yaml import load as load_yaml, Loader, safe_load
 from distutils.util import strtobool
@@ -14,6 +15,7 @@ from django.db.models import Sum, F, Q
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.decorators import api_view
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.response import Response
@@ -21,6 +23,7 @@ from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 from rest_framework.parsers import MultiPartParser
 from drf_yasg.utils import swagger_auto_schema
+import sentry_sdk
 
 import backend.models
 from backend.models import Order, Shop, OrderItem, ProductInfo, Category, Contact, ConfirmEmailToken, Address, \
@@ -1671,6 +1674,8 @@ class PartnerProductInfoPhotoView(APIView):
         try:
             request.user.shop
         except User.shop.RelatedObjectDoesNotExist:
+            # просто для статистики частоты ошибки и отслеживания смысла проверять исключение
+            sentry_sdk.capture_message('count RelatedObjectDoesNotExist exceptions')
             return Response(Error.USER_HAS_NO_SHOP.value, status=400)
 
         # Настраиваем фильтрацию и поиск
@@ -1688,7 +1693,8 @@ class PartnerProductInfoPhotoView(APIView):
             filter_kwargs.update(query_filter_maker(*arguments))
 
         # Товары принадлежащие магазину менеджера
-        queryset = ProductInfo.objects.filter(query, **filter_kwargs)
+        queryset = ProductInfo.objects.filter(query, **filter_kwargs).\
+            select_related('product', 'shop').prefetch_related('photos')
         serializer = ShopProductPhotoSerializer(queryset, many=True)
 
         return Response(serializer.data)
@@ -1883,3 +1889,8 @@ class PartnerProductInfoPhotoView(APIView):
             errors['Error'] = Error.IDS_NOT_EXIST.value['Error']
 
         return Response({'Status': True, 'Удалено объектов': deleted[0], **errors})
+
+
+@api_view(['GET'])
+def main_redirect(request):
+    return redirect('products')
