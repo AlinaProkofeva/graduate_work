@@ -14,6 +14,8 @@ categories:
     name: Компьютерная периферия
   - id: 23
     name: Подменный фонд
+  - id: 25
+    name: Уценка
 
 
 goods:
@@ -25,7 +27,7 @@ goods:
     name: Кабель для iPhone с магнитом
     price: 800
     price_rrc: 990
-    quantity: 101
+    quantity: 66
     description: Качественный кабель с металлической оплеткой для быстрой зарядки
     parameters:
       "Время зарядки": 3.5
@@ -37,7 +39,7 @@ goods:
     name: Смартфон Apple iPhone XR 256GB (красный)
     price: 68000
     price_rrc: 69990
-    quantity: 7
+    quantity: 66
     description: Новый дисплей Liquid Retina - самый продвинутый ЖК‑дисплей Apple. Еще более быстрый Face ID. Самый
       мощный и умный процессор iPhone. И потрясающая камера. iPhone XR - воплощение красоты и интеллекта.
     parameters:
@@ -51,7 +53,7 @@ goods:
     name: Смартфон Apple iPhone XR 256GB (черный)
     price: 65000
     price_rrc: 69990
-    quantity: 5
+    quantity: 66
     description: Новый дисплей Liquid Retina - самый продвинутый ЖК‑дисплей Apple. Еще более быстрый Face ID. Самый
       мощный и умный процессор iPhone. И потрясающая камера. iPhone XR - воплощение красоты и интеллекта.
     parameters:

@@ -4,10 +4,10 @@ import re
 import smtplib
 from smtplib import SMTPRecipientsRefused
 import oauth2_provider.models
+import yaml
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.shortcuts import redirect
 from django_rest_passwordreset.views import ResetPasswordRequestToken, ResetPasswordConfirm
-# from yaml import load as load_yaml, Loader, safe_load
 from distutils.util import strtobool
 from django.contrib.auth.password_validation import validate_password
 from django.db import IntegrityError
@@ -1055,8 +1055,11 @@ class OrderView(APIView):
         "contact": 6,
         "delivery_date": "2023-12-31",
         "delivery_time": "afternoon_15_18",
-        "recipient_full_name": "Фамилия Имя Отчество"
+        "recipient_full_name": "Фамилия Имя Отчество" - ОПЦИОНАЛЬНО
         }
+
+        **recipient_full_name** - при передаче аргумента будет записан указанный получатель, при отсутствии получателем
+        автоматически будет назначен пользователь, разместивший заказ.
 
         **Варианты выбора интервалов доставки:**
         'morning_09_12',
@@ -1077,7 +1080,11 @@ class OrderView(APIView):
         delivery_date = request.data.get('delivery_date')
         delivery_time = request.data.get('delivery_time')
         recipient_full_name = request.data.get('recipient_full_name')
-        if not {'contact', 'delivery_date', 'delivery_time', 'recipient_full_name'}.issubset(request.data):
+        recipient = {}
+        if recipient_full_name:
+            recipient.update(recipient_full_name=recipient_full_name)
+
+        if not {'contact', 'delivery_date', 'delivery_time'}.issubset(request.data):
             return Response(Error.NOT_REQUIRED_ARGS.value, status=400)
         try:
             int(contact)
@@ -1108,7 +1115,7 @@ class OrderView(APIView):
                                          state='new',
                                          delivery_date=delivery_date,
                                          delivery_time=delivery_time,
-                                         recipient_full_name=recipient_full_name
+                                         **recipient
                                          )
         except (ValueError, ValidationError):
             return Response(Error.DATE_WRONG.value, status=400)
@@ -1411,7 +1418,8 @@ class PartnerUpdate(APIView):
             return Response(Error.NOT_REQUIRED_ARGS.value, status=400)
         if file.name.split('.')[-1] != 'yaml':
             return Response(Error.FILE_INCORRECT.value, status=400)
-        file_data = get_data_from_yaml_file(file)
+        # file_data = get_data_from_yaml_file(file)
+        file_data = yaml.load(file, Loader=yaml.Loader)
 
         # Определяем магазин или создаем новый
         shop_name = file_data.get('shop')
@@ -1490,7 +1498,8 @@ class PartnerUpdate(APIView):
             return Response(Error.NOT_REQUIRED_ARGS.value, status=400)
         if file.name.split('.')[-1] != 'yaml':
             return Response(Error.FILE_INCORRECT.value, status=400)
-        data = get_data_from_yaml_file(file)
+        # data = get_data_from_yaml_file(file)
+        data = yaml.load(stream=file, Loader=yaml.Loader)
 
         # сборщик ошибок
         counter = 0

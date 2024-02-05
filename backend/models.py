@@ -460,6 +460,15 @@ class Order(models.Model):
         verbose_name_plural = 'Заказы'
         ordering = ('-datetime',)
 
+    def save(self, *args, **kwargs):
+        """
+        Если данные получателя не переданы, по default устанавливаются фамилия и имя пользователя, делающего заказ
+        """
+
+        if not self.recipient_full_name and self.user:
+            self.recipient_full_name = self.user.__str__()
+            return super(Order, self).save(*args, **kwargs)
+
     def total_sum(self):  # возвращает словарь {'total': sum}
         return self.ordered_items.aggregate(total=Sum(F('quantity') * F('product_info__price')))
 

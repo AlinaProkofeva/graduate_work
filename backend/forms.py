@@ -109,9 +109,10 @@ class OrderForm(ModelForm):
             if not self.cleaned_data['delivery_time']:
                 raise ValidationError(Error.DELIVERY_TIME_WRONG.value)
 
+            # ИЗМЕНЕНО: по default устанавливаются данные user при отсутствии recipient_full_name
             # запрет на отсутствие ФИО получателя для отправленных заказов
-            if not self.cleaned_data['recipient_full_name']:
-                raise ValidationError(Error.RECIPIENT_IS_EMPTY.value)
+            # if not self.cleaned_data['recipient_full_name']:
+            #     raise ValidationError(Error.RECIPIENT_IS_EMPTY.value)
 
         # ограничения для заказов с ЛЮБЫМ статусом
         # ставим запрет на сохранение пустого заказа при создании или при удалении товаров

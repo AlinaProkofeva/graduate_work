@@ -79,7 +79,7 @@ class OrderPostSerializer(serializers.Serializer):
     contact = serializers.IntegerField(min_value=1)
     delivery_date = serializers.CharField(min_length=10, max_length=10)
     delivery_time = serializers.CharField(min_length=5, max_length=20)
-    recipient_full_name = serializers.CharField(min_length=3, max_length=50)
+    recipient_full_name = serializers.CharField(min_length=3, max_length=50, required=False)
 
 
 class BasketDeleteSerializer(serializers.Serializer):
