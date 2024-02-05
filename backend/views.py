@@ -41,11 +41,11 @@ from shop_site.yasg import OrderPostSerializer, BasketDeleteSerializer, BasketPo
     AccountCreateSerializer, ConfirmAccountSerializer, LoginAccountSerializer, RateProductSerializer, \
     CreateReportSerializer, manual_parameters_avatar_thumbnail, AccountPatchSerializer, manual_parameters_good_images, \
     CreateProductImageSerializer, manual_parameters_product_photo, PatchProductImageSerializer, \
-    DeleteProductImageSerializer
+    DeleteProductImageSerializer, exclude_from_swagger
 from .signals import new_account_registered, new_order_state, new_order_created
 from .utils.error_text import Error, ValidateError
 from .utils import reg_patterns, media
-from .utils.get_data_from_yaml import get_data_from_yaml_file, create_categories, get_data_from_all_tasks
+from .utils.get_data_from_yaml import create_categories, get_data_from_all_tasks
 from .tasks import task_load_good_from_yaml
 from .task_backup_report import backup_shop_base, send_report_task
 
@@ -1902,6 +1902,8 @@ class PartnerProductInfoPhotoView(APIView):
         return Response({'Status': True, 'Удалено объектов': deleted[0], **errors})
 
 
+# noinspection PyUnusedLocal
+@exclude_from_swagger
 @api_view(['GET'])
 def main_redirect(request):
     """Заглушка с редиректом для главной страницы"""

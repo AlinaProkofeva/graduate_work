@@ -1,4 +1,5 @@
 from django.urls import path
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions, serializers
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -23,6 +24,13 @@ urlpatterns = [
    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 ]
+
+
+# исключение из автодокументации
+# noinspection PyUnusedLocal
+def exclude_from_swagger(view_func):
+    return swagger_auto_schema(auto_schema=None)
+
 
 # query_params для работы с заказами пользователя: фильтрация и поиск
 manual_parameters_orderview_get = [
